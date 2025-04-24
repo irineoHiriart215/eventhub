@@ -29,3 +29,6 @@ AplicaciÃ³n web para venta de entradas utilizada en la cursada 2025 de IngenierÃ
 ## Iniciar app
 
 `python manage.py runserver`
+
+## Integrantes.
+`Hiriart, Irineo. Legajo 32599 `
