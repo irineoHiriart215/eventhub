@@ -32,3 +32,4 @@ AplicaciÃ³n web para venta de entradas utilizada en la cursada 2025 de IngenierÃ
 
 ## Integrantes.
 `Hiriart, Irineo. Legajo 32599 `
+`Vicente, Juan. Legajo 24770 `
