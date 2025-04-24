@@ -125,3 +125,60 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
+
+#Vista para agregar un comentario
+@login_required
+def add_comment(request, event_id):
+    event = get_object_or_404(Event, pk=event_id)
+    
+    if request.method == "POST":
+        text = request.POST.get("text")
+        
+        # Crear un nuevo comentario
+        comment = Comment.objects.create(
+            event=event,
+            user=request.user,
+            text=text
+        )
+
+        return redirect("event_detail", id=event.id)
+
+    return redirect("event_detail", id=event.id)
+
+#Vista para editar un comentario
+@login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id)
+
+    if not comment.can_user_delete(request.user):
+        return redirect("event_detail", id=comment.event.id)
+
+    if request.method == "POST":
+        comment.text = request.POST.get("text")
+        comment.save()
+        return redirect("event_detail", id=comment.event.id)
+
+    return render(
+        request,
+        "app/edit_comment.html",
+        {"comment": comment, "event": comment.event},
+    )
+    
+#Vista para eliminar un comentario
+@login_required
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id)
+
+    if not comment.can_user_delete(request.user):
+        return redirect("event_detail", id=comment.event.id)
+
+    if request.method == "POST":
+        comment.delete()
+        return redirect("event_detail", id=comment.event.id)
+
+    return render(
+        request,
+        "app/delete_comment.html",
+        {"comment": comment, "event": comment.event},
+    )
+
