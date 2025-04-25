@@ -45,4 +45,42 @@
         </div>
     </div>
 </div>
+
+<div class="mt-4">
+    <h5>Comentarios</h5>
+
+    <form method="POST" action="{% url 'create_comment' event.id %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="text">Comentario:</label>
+            <textarea
+                id="text"
+                name="text"
+                class="form-control"
+                rows="3"
+                required
+            ></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Comentar</button>
+    </form>
+
+    <h5 class="mt-4">Comentarios anteriores</h5>
+    <ul class="list-group">
+        {% for comment in event.comments.all %}
+            <li class="list-group-item">
+                <strong>{{ comment.user.username }}:</strong> {{ comment.text }} <br>
+                <small>{{ comment.created_at|date:"d/m/Y H:i" }}</small>
+                
+                {% if comment.user == request.user %}
+                    <div class="mt-2">
+                        <a href="{% url 'edit_comment' comment.id %}" class="btn btn-outline-primary btn-sm me-2">Editar</a>
+                        <a href="{% url 'delete_comment' comment.id %}" class="btn btn-outline-danger btn-sm">Eliminar</a>
+                    </div>
+                {% endif %}
+            </li>
+        {% empty %}
+            <li class="list-group-item">No hay comentarios aún.</li>
+        {% endfor %}
+    </ul>
+</div>
 {% endblock %}
