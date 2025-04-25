@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Comentario</title>
+</head>
+<body>
+    <h1>Editar Comentario</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <textarea name="text" rows="4" cols="50">{{ comment.text }}</textarea><br>
+        <button type="submit">Guardar cambios</button>
+    </form>
+    <br>
+    <a href="{% url 'event_detail' id=event.id %}">Volver al evento</a>
+</body>
+</html>
