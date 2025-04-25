@@ -185,4 +185,18 @@ def delete_comment(request, comment_id):
         "app/delete_comment.html",
         {"comment": comment, "event": comment.event},
     )
+    
+# Vista para que el organizador vea todos los comentarios de sus eventos
+#@login_required
+#def comment_list(request):
+#    if not request.user.is_organizer:
+#        return redirect("events")
+#
+#    comments = Comment.objects.filter(event__organizer=request.user).order_by("-created_at")
+#    return render(request, "app/comment_list.html", {"comments": comments})
 
+
+@login_required
+def comment_list(request):
+    comments = Comment.objects.all()
+    return render(request, "app/comment_list.html", {"comments": comments})
