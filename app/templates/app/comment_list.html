@@ -12,6 +12,8 @@
         <th>Acciones</th>
       </tr>
     </thead>
+    <!-- Este div evita que los modales se apilen mal -->
+  <div id="modal-container"></div>
     <tbody>
       {% for comment in comments %}
         <tr>
@@ -28,10 +30,65 @@
             <a href="{% url 'edit_comment' comment.id %}" title="Editar">
               <i class="bi bi-pencil"></i> <!-- Icono de editar -->
             </a>
-            <!-- Ícono de Bootstrap para eliminar -->
-            <a href="{% url 'delete_comment' comment.id %}" title="Eliminar">
-              <i class="bi bi-trash"></i> <!-- Icono de eliminar -->
-            </a>
+            <!-- Botón y modal de eliminar -->
+  <button
+  type="button"
+  class="btn btn-sm btn-danger"
+  data-bs-toggle="modal"
+  data-bs-target="#confirmDeleteModal{{ comment.id }}"
+  title="Eliminar"
+>
+<i class="bi bi-trash"></i>
+</button>
+
+<!-- Modal de confirmación acá -->
+<div
+  class="modal fade"
+  id="confirmDeleteModal{{ comment.id }}"
+  tabindex="-1"
+  aria-labelledby="confirmDeleteLabel{{ comment.id }}"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" id="confirmDeleteLabel{{ comment.id }}">
+                  Confirmar eliminación
+              </h5>
+              <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Cerrar"
+              ></button>
+          </div>
+          <div class="modal-body">
+              ¿Estás seguro de que querés eliminar este comentario?
+              <blockquote class="blockquote mt-2">
+                  <p class="mb-0">{{ comment.text|truncatechars:80 }}</p>
+              </blockquote>
+          </div>
+          <div class="modal-footer">
+              <form
+                  method="POST"
+                  action="{% url 'delete_comment' comment.id %}"
+              >
+                  {% csrf_token %}
+                  <button
+                      type="button"
+                      class="btn btn-secondary"
+                      data-bs-dismiss="modal"
+                  >Cancelar</button>
+                  <button
+                      type="submit"
+                      class="btn btn-danger"
+                  >Eliminar</button>
+              </form>
+          </div>
+      </div>
+  </div>
+</div>
+           
           </td>
         </tr>
       {% empty %}
