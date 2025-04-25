@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .models import Event, User
+from .models import Event, Comment
 
 
 def register(request):
@@ -126,24 +127,27 @@ def event_form(request, id=None):
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
 
-#Vista para agregar un comentario
+
+#Creamos la vista para gestionar los comentarios.
 @login_required
-def add_comment(request, event_id):
+def create_comment(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
-    
+
     if request.method == "POST":
         text = request.POST.get("text")
         
-        # Crear un nuevo comentario
+        # Crear el comentario y asociarlo con el evento y el usuario
         comment = Comment.objects.create(
             event=event,
             user=request.user,
             text=text
         )
 
-        return redirect("event_detail", id=event.id)
+        # Redirigir de nuevo a la página del evento
+        return redirect('event_detail', id=event.id)
 
-    return redirect("event_detail", id=event.id)
+    # Si no es POST, redirigir al detalle del evento (por ejemplo, si alguien intenta acceder a esta vista sin enviar datos)
+    return redirect('event_detail', id=event.id)
 
 #Vista para editar un comentario
 @login_required
