@@ -14,8 +14,7 @@ urlpatterns = [
     path("events/<int:id>/", views.event_detail, name="event_detail"),
     path("events/<int:id>/delete/", views.event_delete, name="event_delete"),
     #rutas para los comentarios
-    path("events/<int:event_id>/comments/add/", views.add_comment, name="add_comment"),
+    path('events/<int:event_id>/comments/', views.create_comment, name='create_comment'),
     path("comments/<int:comment_id>/edit/", views.edit_comment, name="edit_comment"),
-    path("comments/<int:comment_id>/delete/", views.delete_comment, name="delete_comment"),
-
+    path("comments/<int:comment_id>/delete/", views.delete_comment, name="delete_comment"),      
 ]
