@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .models import Event, User
+from .models import Event, Comment
 
 
 def register(request):
@@ -125,3 +126,77 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
+
+
+#Creamos la vista para gestionar los comentarios.
+@login_required
+def create_comment(request, event_id):
+    event = get_object_or_404(Event, pk=event_id)
+
+    if request.method == "POST":
+        text = request.POST.get("text")
+        
+        # Crear el comentario y asociarlo con el evento y el usuario
+        comment = Comment.objects.create(
+            event=event,
+            user=request.user,
+            text=text
+        )
+
+        # Redirigir de nuevo a la página del evento
+        return redirect('event_detail', id=event.id)
+
+    # Si no es POST, redirigir al detalle del evento (por ejemplo, si alguien intenta acceder a esta vista sin enviar datos)
+    return redirect('event_detail', id=event.id)
+
+#Vista para editar un comentario
+@login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id)
+
+    if not comment.can_user_delete(request.user):
+        return redirect("event_detail", id=comment.event.id)
+
+    if request.method == "POST":
+        comment.text = request.POST.get("text")
+        comment.save()
+        return redirect("event_detail", id=comment.event.id)
+
+    return render(
+        request,
+        "app/edit_comment.html",
+        {"comment": comment, "event": comment.event},
+    )
+    
+#Vista para eliminar un comentario
+@login_required
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id)
+
+    if not comment.can_user_delete(request.user):
+        return redirect("event_detail", id=comment.event.id)
+
+    if request.method == "POST":
+        comment.delete()
+        return redirect("event_detail", id=comment.event.id)
+
+    return render(
+        request,
+        "app/delete_comment.html",
+        {"comment": comment, "event": comment.event},
+    )
+    
+# Vista para que el organizador vea todos los comentarios de sus eventos
+#@login_required
+#def comment_list(request):
+#    if not request.user.is_organizer:
+#        return redirect("events")
+#
+#    comments = Comment.objects.filter(event__organizer=request.user).order_by("-created_at")
+#    return render(request, "app/comment_list.html", {"comments": comments})
+
+
+@login_required
+def comment_list(request):
+    comments = Comment.objects.all()
+    return render(request, "app/comment_list.html", {"comments": comments})
