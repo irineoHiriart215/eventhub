@@ -87,3 +87,9 @@ class Comment(models.Model):
     def can_user_delete(self, user):
         return self.user == user or self.event.organizer == user
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    def __str__(self):
+        return self.name
