@@ -149,6 +149,7 @@ def create_comment(request, event_id):
     # Si no es POST, redirigir al detalle del evento (por ejemplo, si alguien intenta acceder a esta vista sin enviar datos)
     return redirect('event_detail', id=event.id)
 
+
 #Vista para editar un comentario
 @login_required
 def edit_comment(request, comment_id):
@@ -187,15 +188,6 @@ def delete_comment(request, comment_id):
     )
     
 # Vista para que el organizador vea todos los comentarios de sus eventos
-#@login_required
-#def comment_list(request):
-#    if not request.user.is_organizer:
-#        return redirect("events")
-#
-#    comments = Comment.objects.filter(event__organizer=request.user).order_by("-created_at")
-#    return render(request, "app/comment_list.html", {"comments": comments})
-
-
 @login_required
 def comment_list(request):
     comments = Comment.objects.all()
