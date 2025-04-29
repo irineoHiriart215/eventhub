@@ -18,5 +18,9 @@ urlpatterns = [
     path("comments/<int:comment_id>/edit/", views.edit_comment, name="edit_comment"),
     path("comments/<int:comment_id>/delete/", views.delete_comment, name="delete_comment"),
     path("comments/list/", views.comment_list, name="comment_list"),
-          
+    path('categorias/', views.categoria_list, name="categoria"),
+    path('categorias/detalle/<int:category_id>/', views.view_categoria, name="detail_categoria"),    
+    path('categorias/create/', views.create_categoria, name="create_categoria"),
+    path('categorias/edit/<int:category_id>/', views.edit_categoria, name="edit_categoria"),
+    path('categorias/delete/<int:category_id>/', views.delete_categoria, name="delete_categoria"),
 ]

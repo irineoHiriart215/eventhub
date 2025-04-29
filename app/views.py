@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .models import Event, User
-from .models import Event, Comment
+from .models import Event, Comment, Category
 
 
 def register(request):
@@ -195,8 +195,84 @@ def delete_comment(request, comment_id):
 #    comments = Comment.objects.filter(event__organizer=request.user).order_by("-created_at")
 #    return render(request, "app/comment_list.html", {"comments": comments})
 
-
 @login_required
 def comment_list(request):
     comments = Comment.objects.all()
     return render(request, "app/comment_list.html", {"comments": comments})
+
+
+@login_required
+def create_categoria(request):
+    user = request.user
+    categoria = {}
+    if not user.is_organizer:
+        return redirect("categoria")
+    
+    if request.method == "POST":
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        is_active = request.POST.get("is_active")
+        categoria = Category.objects.create(
+            name = name,
+            description = description,
+            is_active = is_active )
+        return redirect('categoria')
+
+    return render(
+        request,
+        "app/crearCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer})
+
+
+@login_required
+def categoria_list(request):
+    categorias = Category.objects.all()
+    return render(
+        request,
+        "app/ListaCategoria.html",
+        {"categorias": categorias, "user_is_organizer": request.user.is_organizer})
+        
+@login_required
+def edit_categoria(request, category_id):
+    categoria = get_object_or_404(Category, pk=category_id)
+ 
+    if not request.user.is_organizer:
+        return redirect("categoria")
+
+    if request.method == "POST":
+        categoria.name = request.POST.get("name")
+        categoria.description = request.POST.get("description")
+        categoria.is_active = request.POST.get("is_active")
+        categoria.save()
+        return redirect('categoria')
+
+    return render(
+        request,
+        "app/editCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer},
+    )
+
+@login_required
+def view_categoria(request, category_id):
+    categoria = get_object_or_404(Category, pk=category_id)      
+    return render(
+        request,
+        "app/detailCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer},
+    )
+
+@login_required
+def delete_categoria(request, category_id):
+    categoria = get_object_or_404(Category, pk=category_id)
+    if not request.user.is_organizer:
+        return redirect("events")
+
+    if request.method == "POST":
+        categoria.delete()
+        return redirect("categoria")
+
+    return render(
+        request,
+        "app/deleteCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer},
+    )

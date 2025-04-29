@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Categorias{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Categorias</h1>
+        {% if user_is_organizer %}
+            <a
+                href="{% url 'create_categoria' %}"
+                class="btn btn-primary"
+            >
+                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                Crear Categoria
+            </a>
+        {% endif %}
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Eventos</th>
+                <th>Activa</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for categoria in categorias%}
+                <tr>
+                    <td>{{ categoria.name }}</td>
+                    <td>{{ categoria.description }}</td>
+                    <td>
+                        {% if categoria.event_set.count > 0 %}
+                            {{ categoria.event_set.count }} eventos
+                        {% else %}
+                            Sin eventos
+                        {% endif %} 
+                    </td>
+                    <td>
+                        {%if categoria.is_active %}
+                            Si
+                        {%else%}
+                            No
+                        {%endif%}
+                    </td>
+                    <td>
+                        <div class="hstack gap-1">
+                            <a href="{% url 'detail_categoria' categoria.id %}"
+                               class="btn btn-sm btn-outline-primary"
+                               aria-label="Ver detalle"
+                               title="Ver detalle">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </a>
+                            {% if user_is_organizer %}
+                                <a href="{% url 'edit_categoria' categoria.id %}"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    aria-label="Editar"
+                                    title="Editar">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </a>
+                                <form action="{% url 'delete_categoria' categoria.id %}" method="GET">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger"
+                                        title="Eliminar"
+                                        type="submit"
+                                        aria-label="Eliminar"
+                                        titile="Eliminar">
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">No hay categorias disponibles</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
