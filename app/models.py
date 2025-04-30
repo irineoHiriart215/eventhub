@@ -26,12 +26,23 @@ class User(AbstractUser):
 
         return errors
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+    
+    def user_is_organizer(self, user):
+        return user.is_organizer
 
 class Event(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -86,14 +97,3 @@ class Comment(models.Model):
 
     def can_user_delete(self, user):
         return self.user == user or self.event.organizer == user
-
-class Category(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.name
-    
-    def user_is_organizer(self, user):
-        return user.is_organizer
