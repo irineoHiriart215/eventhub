@@ -96,6 +96,8 @@ def event_form(request, id=None):
     if not user.is_organizer:
         return redirect("events")
 
+    categorias = Category.objects.all()
+
     if request.method == "POST":
         title = request.POST.get("title")
         description = request.POST.get("description")
@@ -124,7 +126,7 @@ def event_form(request, id=None):
     return render(
         request,
         "app/event_form.html",
-        {"event": event, "user_is_organizer": request.user.is_organizer},
+        {"event": event, "user_is_organizer": request.user.is_organizer, "categorias": categorias},
     )
 
 
