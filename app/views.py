@@ -3,9 +3,11 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.contrib import messages
+
 
 from .models import Event, User
-from .models import Event, Comment
+from .models import Event, Comment, Category
 
 
 def register(request):
@@ -80,21 +82,27 @@ def event_delete(request, id):
     user = request.user
     if not user.is_organizer:
         return redirect("events")
-
+    
+    event = get_object_or_404(Event, pk=id)
     if request.method == "POST":
-        event = get_object_or_404(Event, pk=id)
         event.delete()
         return redirect("events")
 
-    return redirect("events")
+    return render(
+        request,
+        "app/event_delete.html",
+        {"evento": event, "user_is_organizer": request.user.is_organizer},
+    )
 
 
 @login_required
-def event_form(request, id=None):
+def event_form(request, id = None):
     user = request.user
 
     if not user.is_organizer:
         return redirect("events")
+
+    categorias = Category.objects.all()
 
     if request.method == "POST":
         title = request.POST.get("title")
@@ -109,11 +117,14 @@ def event_form(request, id=None):
             datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
         )
 
+        category_id= request.POST.get("categoria")
+        category= get_object_or_404(Category,id=category_id)
+        
         if id is None:
-            Event.new(title, description, scheduled_at, request.user)
+            Event.new(title, description, scheduled_at, request.user, category)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user)
+            event.update(title, description, scheduled_at, request.user, category)
 
         return redirect("events")
 
@@ -124,7 +135,7 @@ def event_form(request, id=None):
     return render(
         request,
         "app/event_form.html",
-        {"event": event, "user_is_organizer": request.user.is_organizer},
+        {"event": event, "user_is_organizer": request.user.is_organizer, "categorias": categorias},
     )
 
 
@@ -195,8 +206,96 @@ def delete_comment(request, comment_id):
 #    comments = Comment.objects.filter(event__organizer=request.user).order_by("-created_at")
 #    return render(request, "app/comment_list.html", {"comments": comments})
 
-
 @login_required
 def comment_list(request):
     comments = Comment.objects.all()
     return render(request, "app/comment_list.html", {"comments": comments})
+
+
+@login_required
+def create_categoria(request):
+    user = request.user
+    categoria = {}
+
+    if not user.is_organizer:
+        return redirect("categoria")
+    
+    if request.method == "POST":
+        name = request.POST.get("name").strip()
+        description = request.POST.get("description").strip()
+        is_active = request.POST.get("is_active")
+
+        errors = []
+
+        if not name:
+            errors.append("Debe ingresar un nombre.")
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            categoria = Category.objects.create(
+                name = name,
+                description = description,
+                is_active = is_active )
+            messages.success(request, "Categoria creada.")
+            return redirect('categoria')
+
+    return render(
+        request,
+        "app/crearCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer})
+
+
+@login_required
+def categoria_list(request):
+    categorias = Category.objects.all()
+    return render(
+        request,
+        "app/ListaCategoria.html",
+        {"categorias": categorias, "user_is_organizer": request.user.is_organizer})
+        
+@login_required
+def edit_categoria(request, category_id):
+    categoria = get_object_or_404(Category, pk=category_id)
+ 
+    if not request.user.is_organizer:
+        return redirect("categoria")
+
+    if request.method == "POST":
+        categoria.name = request.POST.get("name")
+        categoria.description = request.POST.get("description")
+        categoria.is_active = request.POST.get("is_active")
+        categoria.save()
+        return redirect('categoria')
+
+    return render(
+        request,
+        "app/editCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer},
+    )
+
+@login_required
+def view_categoria(request, category_id):
+    categoria = get_object_or_404(Category, pk=category_id)      
+    return render(
+        request,
+        "app/detailCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer},
+    )
+
+@login_required
+def delete_categoria(request, category_id):
+    categoria = get_object_or_404(Category, pk=category_id)
+    if not request.user.is_organizer:
+        return redirect("events")
+
+    if request.method == "POST":
+        categoria.delete()
+        return redirect("categoria")
+
+    return render(
+        request,
+        "app/deleteCategoria.html",
+        {"categoria": categoria, "user_is_organizer": request.user.is_organizer},
+    )
