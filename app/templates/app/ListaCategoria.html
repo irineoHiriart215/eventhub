@@ -32,8 +32,11 @@
                     <td>{{ categoria.name }}</td>
                     <td>{{ categoria.description }}</td>
                     <td>
-                        {% if categoria.event_set.count > 0 %}
-                            {{ categoria.event_set.count }} eventos
+                        {% if categoria.events.count > 0 %}
+                            {%if categoria.events.count == 1%} Un evento
+                            {%else%}
+                            {{ categoria.events.count }} eventos
+                            {%endif%}
                         {% else %}
                             Sin eventos
                         {% endif %} 

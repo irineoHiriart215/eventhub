@@ -21,7 +21,7 @@
                             </div>
                             <div class="mb-4">
                                 <h6 class="text-muted mb-1">¿Esta activa?</h6>
-                                <p class="fs-5 mb-0">{{categoria.is_active}}</p>  
+                                <p class="fs-5 mb-0">{% if categoria.is_active %} Si {% else %} No {%endif%}</p>  
                             </div>                               
                             <div>
                                 <a href="{% url 'edit_categoria' categoria.id %}" class="btn btn-outline-primary">Editar</a>
