@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">
+                    Crear categoria
+            </h1>
+
+            <div class="card">
+                <div class="card-body">
+                    <form action="{% url 'create_categoria' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="vstack gap-3">
+                            <div>
+                                <label for="title" class="form-label">Nombre de la categoria</label>
+                                <input class="form-control"
+                                    id="name"
+                                    required=""
+                                    type="text"
+                                    value="{{ categoria.name }}"
+                                    name="name" />
+                            </div>
+                            <div>
+                                <label for="description" class="form-label">Descripción</label>
+                                <textarea
+                                    class="form-control"
+                                    id="description"
+                                    name="description"
+                                    rows="4"
+                                    required="">{{ categoria.description }}</textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">¿Esta activa?</label>
+                                <div class="form-check form-check-inline">
+                                <input 
+                                    class="btn-check"
+                                    type="radio"
+                                    id="activo"
+                                    name="is_active"
+                                    value="True"
+                                    autocomplete="off"
+                                    {% if categoria.is_active %} checked {%endif%}>
+                                    <label class="btn btn-outline-success" for="activo">Si</label>
+                                </div>  
+                                <div class="form-check form-check-inline">
+                                    <input 
+                                        class="btn-check"
+                                        type="radio"
+                                        id="activoNo"
+                                        name="is_active"
+                                        value="False"
+                                        autocomplete="off"
+                                        {% if not categoria.is_active %} checked {%endif%}>
+                                        <label class="btn btn-outline-danger" for="activoNo">No</label>
+                                    </div>   
+                            </div>                            
+                            <div>
+                                <button type="submit" class="btn btn-primary">Crear Categoria</button>
+                                <a href="{% url 'categoria' %}" class="btn btn-outline-secondary">Cancelar</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

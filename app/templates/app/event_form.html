@@ -11,7 +11,6 @@
                     Crear evento
                 {% endif %}
             </h1>
-
             <div class="card">
                 <div class="card-body">
                     <form action="{% url 'event_form' %}" method="POST">
@@ -56,9 +55,34 @@
                                         value="{{ event.scheduled_at|date:'g:i'}}"
                                         name="time" />
                                 </div>
+                                <div>
+                                    <label class="form-label">Categoría</label>
+                                    <div class="row">
+                                    {% for categoria in categorias %}
+                                        <div class="col-md-4">
+                                            <input
+                                                class="form-check-input"
+                                                type="radio"
+                                                name="categoria"
+                                                id="categoria{{ categoria.id }}"
+                                                value="{{ categoria.id }}"
+                                                required>
+                                            <label class="form-check-label" for="categoria{{ categoria.id }}">
+                                                {{ categoria.name }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                    </div>
+                                </div>
                             </div>
                             <div>
-                                <button type="submit" class="btn btn-primary">Crear Evento</button>
+                                <button type="submit" class="btn btn-primary">
+                                    {% if event.id %}
+                                        Editar evento
+                                    {% else %}
+                                        Crear evento
+                                    {% endif %}
+                                </button>
                             </div>
                         </div>
                     </form>
