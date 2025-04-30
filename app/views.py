@@ -90,7 +90,7 @@ def event_delete(request, id):
 
 
 @login_required
-def event_form(request, id=None):
+def event_form(request, id = None):
     user = request.user
 
     if not user.is_organizer:
@@ -111,11 +111,14 @@ def event_form(request, id=None):
             datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
         )
 
+        category_id= request.POST.get("categoria")
+        category= get_object_or_404(Category,id=category_id)
+        
         if id is None:
-            Event.new(title, description, scheduled_at, request.user)
+            Event.new(title, description, scheduled_at, request.user, category)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user)
+            event.update(title, description, scheduled_at, request.user, category)
 
         return redirect("events")
 
