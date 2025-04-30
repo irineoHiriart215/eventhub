@@ -34,3 +34,4 @@ Aplicación web para venta de entradas utilizada en la cursada 2025 de Ingenier�
 `Hiriart, Irineo. Legajo 32599 `
 `Vicente, Juan. Legajo 24770 `
 `Leiva, Emanuel. Legajo 31483`
+`Battistella, Tomás. Legajo 31520`
