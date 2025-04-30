@@ -3,6 +3,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.contrib import messages
+
 
 from .models import Event, User
 from .models import Event, Comment, Category
@@ -214,18 +216,30 @@ def comment_list(request):
 def create_categoria(request):
     user = request.user
     categoria = {}
+
     if not user.is_organizer:
         return redirect("categoria")
     
     if request.method == "POST":
-        name = request.POST.get("name")
-        description = request.POST.get("description")
+        name = request.POST.get("name").strip()
+        description = request.POST.get("description").strip()
         is_active = request.POST.get("is_active")
-        categoria = Category.objects.create(
-            name = name,
-            description = description,
-            is_active = is_active )
-        return redirect('categoria')
+
+        errors = []
+
+        if not name:
+            errors.append("Debe ingresar un nombre.")
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            categoria = Category.objects.create(
+                name = name,
+                description = description,
+                is_active = is_active )
+            messages.success(request, "Categoria creada.")
+            return redirect('categoria')
 
     return render(
         request,
