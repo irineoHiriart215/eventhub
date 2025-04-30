@@ -80,13 +80,17 @@ def event_delete(request, id):
     user = request.user
     if not user.is_organizer:
         return redirect("events")
-
+    
+    event = get_object_or_404(Event, pk=id)
     if request.method == "POST":
-        event = get_object_or_404(Event, pk=id)
         event.delete()
         return redirect("events")
 
-    return redirect("events")
+    return render(
+        request,
+        "app/event_delete.html",
+        {"evento": event, "user_is_organizer": request.user.is_organizer},
+    )
 
 
 @login_required

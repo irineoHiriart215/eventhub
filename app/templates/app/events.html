@@ -48,7 +48,7 @@
                                     title="Editar">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                 </a>
-                                <form action="{% url 'event_delete' event.id %}" method="POST">
+                                <form action="{% url 'event_delete' event.id %}" method="GET">
                                     {% csrf_token %}
                                     <button class="btn btn-sm btn-outline-danger"
                                         title="Eliminar"
