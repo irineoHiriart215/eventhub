@@ -90,15 +90,15 @@ class Comment(models.Model):
 
 class Ticket(models.Model):
 # Definimos un choice field para los tipos de tickets
-    TICKET_TYPES = [ 
-        ("GENERAL", "General"),
-        ("VIP", "VIP"),
-    ]
+    TICKET_TYPES = (
+    ("GENERAL", "General"),
+    ("VIP", "VIP"),
+    )
 # Atributos
     buy_date = models.DateTimeField(auto_now_add=True)
-    ticket_code = models.CharField(max_length="12", unique=True, editable=False)
+    ticket_code = models.CharField(max_length=12, unique=True, editable=False)
     quantity = models.IntegerField()
-    type = models.CharField(max_length="10", choices=TICKET_TYPES)
+    type = models.CharField(max_length=10, choices=TICKET_TYPES)
 
 # Relaciones muchos a uno
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tickets")
