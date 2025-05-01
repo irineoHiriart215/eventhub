@@ -305,6 +305,16 @@ def create_rating(request,event_id):
     specificEvent = get_object_or_404(Event, pk=event_id)
     rate = None
 
+    # Verificar que el usuario no pueda calificar su propio evento
+    if specificEvent.organizer == request.user:
+        messages.error(request, "No puedes crear un rating para tu propio evento.")
+        return redirect('event_detail', id=specificEvent.id)
+    
+    # Verificar si ya existe un rating para este evento por parte del usuario
+    if specificEvent.ratings.filter(user=request.user).exists():
+        messages.error(request, "Ya has creado un rating para este evento.")
+        return redirect('event_detail', id=specificEvent.id)
+
     if request.method == "POST":
         title_input = request.POST.get("title")
         text_input = request.POST.get("text")
@@ -334,13 +344,15 @@ def create_rating(request,event_id):
     return render(
         request,
         "app/crearRating.html",
-        {"rating": rate, "user_is_organizer": request.user.is_organizer})
+        {"rating": rate, "user_is_organizer": request.user.is_organizer, "event_id": specificEvent.id}
+    )
         
 @login_required
 def edit_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
  
     if not rating.can_user_delete_or_edit(request.user):
+        messages.error(request, "No puedes editar este rating.")
         return redirect('event_detail', id=rating.event.id)
 
     if request.method == "POST":
@@ -360,7 +372,8 @@ def edit_rating(request, rating_id):
 def delete_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
     if not rating.can_user_delete_or_edit(request.user):
-        return redirect('event_detail', id=rating.event.id)
+        messages.error(request, "No puedes eliminar este rating.")
+        return redirect("event_detail", id=rating.event.id)
 
     if request.method == "POST":
         rating.delete()
