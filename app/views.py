@@ -341,14 +341,14 @@ def edit_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
  
     if not rating.can_user_delete_or_edit(request.user):
-        return redirect('event_detail', id=specificEvent.id)
+        return redirect('event_detail', id=rating.event.id)
 
     if request.method == "POST":
         rating.title = request.POST.get("title")
         rating.text = request.POST.get("text")
         rating.rating = request.POST.get("rating")
         rating.save()
-        return redirect('event_detail', id=specificEvent.id)
+        return redirect('event_detail', id=rating.event.id)
 
     return render(
         request,
@@ -360,11 +360,11 @@ def edit_rating(request, rating_id):
 def delete_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
     if not rating.can_user_delete_or_edit(request.user):
-        return redirect('event_detail', id=specificEvent.id)
+        return redirect('event_detail', id=rating.event.id)
 
     if request.method == "POST":
         rating.delete()
-        return redirect('event_detail', id=specificEvent.id)
+        return redirect('event_detail', id=rating.event.id)
 
     return render(
         request,

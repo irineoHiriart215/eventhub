@@ -1,0 +1,22 @@
+ <!-- Modal de confirmación para eliminar rating -->
+ <div class="modal fade" id="deleteRatingModal{{ rating.id }}" tabindex="-1" aria-labelledby="deleteRatingLabel{{ rating.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{% url 'delete_rating' rating.id %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteRatingLabel{{ rating.id }}">Confirmar eliminación</h5>
+          </div>
+          <div class="modal-body">
+            ¿Estás seguro de que querés eliminar esta valoración?
+            <p><strong>{{ rating.title }}</strong></p>
+            <p class="mb-0">{{ rating.text }}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-danger">Eliminar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
