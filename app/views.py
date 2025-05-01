@@ -329,7 +329,7 @@ def create_rating(request,event_id):
                 text = text_input,
                 rating = rating_input)
             messages.success(request, "Rating creado.")
-            return redirect('rating')
+            return redirect('event_detail', id=specificEvent.id)
 
     return render(
         request,
@@ -341,14 +341,14 @@ def edit_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
  
     if not rating.can_user_delete_or_edit(request.user):
-        return redirect("rating")
+        return redirect('event_detail', id=specificEvent.id)
 
     if request.method == "POST":
         rating.title = request.POST.get("title")
         rating.text = request.POST.get("text")
         rating.rating = request.POST.get("rating")
         rating.save()
-        return redirect('rating')
+        return redirect('event_detail', id=specificEvent.id)
 
     return render(
         request,
@@ -360,11 +360,11 @@ def edit_rating(request, rating_id):
 def delete_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
     if not rating.can_user_delete_or_edit(request.user):
-        return redirect("events")
+        return redirect('event_detail', id=specificEvent.id)
 
     if request.method == "POST":
         rating.delete()
-        return redirect("rating")
+        return redirect('event_detail', id=specificEvent.id)
 
     return render(
         request,
@@ -377,10 +377,6 @@ def rating_list_event(request,event_id):
     specificEvent = get_object_or_404(Event,pk=event_id)
     ratings = Rating.objects.filter(event=specificEvent)
     return render(
-    request,
-    "app/ListaRatings.html",
-    {
-        "ratings": ratings,
-        "event": specificEvent
-    }
-)
+        request,
+        "app/listaRatings.html",
+        {"ratings": ratings})
