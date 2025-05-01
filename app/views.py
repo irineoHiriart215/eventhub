@@ -7,7 +7,7 @@ from django.contrib import messages
 
 
 from .models import Event, User
-from .models import Event, Comment, Category
+from .models import Event, Comment, Category, Rating
 
 
 def register(request):
@@ -299,3 +299,88 @@ def delete_categoria(request, category_id):
         "app/deleteCategoria.html",
         {"categoria": categoria, "user_is_organizer": request.user.is_organizer},
     )
+
+@login_required
+def create_rating(request,event_id):
+    specificEvent = get_object_or_404(Event, pk=event_id)
+    rate = None
+
+    if request.method == "POST":
+        title_input = request.POST.get("title")
+        text_input = request.POST.get("text")
+        rating_input = request.POST.get("rating")
+
+        errors = []
+
+        if not title_input:
+            errors.append("Debe ingresar un nombre.")
+        
+        if not rating_input:
+            errors.append("Debe ingresar un rating")
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            rate = Rating.objects.create(
+                user=request.user,
+                event=specificEvent,
+                title = title_input,
+                text = text_input,
+                rating = rating_input)
+            messages.success(request, "Rating creado.")
+            return redirect('rating')
+
+    return render(
+        request,
+        "app/crearRating.html",
+        {"rating": rate, "user_is_organizer": request.user.is_organizer})
+        
+@login_required
+def edit_rating(request, rating_id):
+    rating = get_object_or_404(Rating, pk=rating_id)
+ 
+    if not rating.can_user_delete_or_edit(request.user):
+        return redirect("rating")
+
+    if request.method == "POST":
+        rating.title = request.POST.get("title")
+        rating.text = request.POST.get("text")
+        rating.rating = request.POST.get("rating")
+        rating.save()
+        return redirect('rating')
+
+    return render(
+        request,
+        "app/editarRating.html",
+        {"rating": rating}
+    )
+
+@login_required
+def delete_rating(request, rating_id):
+    rating = get_object_or_404(Rating, pk=rating_id)
+    if not rating.can_user_delete_or_edit(request.user):
+        return redirect("events")
+
+    if request.method == "POST":
+        rating.delete()
+        return redirect("rating")
+
+    return render(
+        request,
+        "app/deleteRating.html",
+        {"rating": rating}
+    )
+
+@login_required
+def rating_list_event(request,event_id):
+    specificEvent = get_object_or_404(Event,pk=event_id)
+    ratings = Rating.objects.filter(event=specificEvent)
+    return render(
+    request,
+    "app/ListaRatings.html",
+    {
+        "ratings": ratings,
+        "event": specificEvent
+    }
+)
