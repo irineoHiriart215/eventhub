@@ -1,0 +1,43 @@
+<!-- RATINGS -->
+<!-- FORMULARIO PARA AGREGAR RATING -->
+<form method="POST" action="{% url 'create_rating' event.id %}">
+    {% csrf_token %}
+
+    <div class="form-group mb-3">
+        <label for="title">Título del Rating *</label>
+        <input
+            type="text"
+            id="title"
+            name="title"
+            class="form-control"
+            placeholder="Escribe un título para tu calificación..."
+            required
+        />
+    </div>
+
+    <div class="form-group mb-3">
+        <label for="rating">Puntuación (1 a 5) *</label>
+        <input
+            type="number"
+            id="rating"
+            name="rating"
+            class="form-control"
+            min="1"
+            max="5"
+            required
+        />
+    </div>
+
+    <div class="form-group mb-3">
+        <label for="text">Comentario (opcional)</label>
+        <textarea
+            id="text"
+            name="text"
+            class="form-control"
+            rows="3"
+            placeholder="Deja tu opinión sobre el evento..."
+        ></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success">Enviar Rating</button>
+</form>
