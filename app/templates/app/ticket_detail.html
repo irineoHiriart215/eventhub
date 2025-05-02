@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="conteiner mt-5">
+    <h2 class="mt-4">Detalle del Ticket</h2>
+
+    <div class="card">
+        <div class="card-header">
+            {{ticket.event.title}}
+        </div>
+        <div class="card-body">
+
+            <h5 class="card-title">Informacion del evento</h5>
+            <p class="card-text"><strong>Descripcion:</strong> {{ ticket.event.description }} </p>
+            <p class="card-text"><strong>Fecha:</strong> {{ ticket.event.date }} </p>
+
+            <h5 class="card-title">Informacion del ticket</h5>
+            <p class="card-text"><strong>Codigo del ticket:</strong> {{ ticket.ticket_code }} </p>
+            <p class="card-text"><strong>Cantidad de entradas:</strong> {{ ticket.quantity }} </p>
+            <p class="card-text"><strong>Tipo de entradas:</strong> {{ ticket.get_type_display }} </p>
+
+            <a href="{% url 'ticket_edit' ticket.id %}" class="btn btn-outline-secondary mt-3">
+                <i class="bi bi-pencil"></i>Editar
+            </a>
+            <a href="{% url 'ticket_delete' ticket.id %}" class="btn btn-outline-danger mt-3">
+                <i class="bi bi-trash"></i>Eliminar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
