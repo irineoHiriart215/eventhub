@@ -204,5 +204,5 @@ def comment_list(request):
 @login_required
 def ticket_list(request):
     # Obtener solo los tickets del usuario logueado
-    tickets = Ticket.object.filter(user=request.user)
+    tickets = Ticket.objects.filter(user=request.user)
     return render(request, 'app/ticket_list.html', {'tickets': tickets})
