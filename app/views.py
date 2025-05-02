@@ -206,3 +206,50 @@ def ticket_list(request):
     # Obtener solo los tickets del usuario logueado
     tickets = Ticket.objects.filter(user=request.user)
     return render(request, 'app/ticket_list.html', {'tickets': tickets})
+
+# View para crear o editar un ticket
+@login_required
+def ticket_form(request, id=None):
+    if id:
+        ticket = get_object_or_404(Ticket, pk=id, user=request.user)
+        if not ticket.can_be_modified_by_user(request.user):
+            return redirect("home")
+    else:
+        ticket=None
+
+    if request.method == "POST" and ticket.can_be_modified_by_user(request.user):
+        quantity = request.POST.get("quantity")
+        type_ = request.POST.get("type")
+        event_id = request.POST.get("event_id")
+
+        if ticket:
+            ticket.quantity = quantity
+            ticket.type = type_
+        else:
+            event = get_object_or_404(Event, pk=event_id)
+            ticket = Ticket.objects.create(
+                quantity = quantity,
+                type=type_,
+                user=request.user,
+                event=event
+            )
+        ticket.save()
+        return redirect("ticket_list")
+    return render(request, "app/ticket_form.html", {"ticket": ticket})
+
+# View para ver el detalle de un ticket
+@login_required
+def ticket_detail(request, id):
+    ticket = get_object_or_404(Ticket, pk=id, user=request.user)
+    return render(request, "app/ticket_detail.html", {"ticket": ticket})
+
+# View para eliminar tickets
+@login_required
+def ticket_delete(request, id):
+    ticket=get_object_or_404(Ticket, pk=id, user=request.user)
+
+    if request.method=="POST" and ticket.can_be_deleted_by_user(request.user):
+        ticket.delete()
+        return redirect("ticket_list")
+    return render(request, "app/ticket_delete.html", {"ticket": ticket})
+    

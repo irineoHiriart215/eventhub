@@ -115,12 +115,12 @@ class Ticket(models.Model):
         return uuid.uuid4().hex[:12].upper()
     
     def can_be_modified_by_user(self, user):
-        """Permite editar o eliminar si es el dueño del ticket"""
+        """Permite editar si es el dueño del ticket"""
         return self.user == user
     
-    def can_be_deleted_by_organizer(self, user):
-        """Permite eliminar si es el organizador del evento"""
-        return self.event.organizer == user
+    def can_be_deleted_by_user(self, user):
+        """Permite eliminar si es el dueño del ticket"""
+        return self.user == user
     
     def __str__(self):
         """Cuando se imprima un objeto en especifico se vera de la siguiente forma: VIP x2 - juanito - A1B2C3D4E5F6"""
