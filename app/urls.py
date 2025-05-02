@@ -20,7 +20,7 @@ urlpatterns = [
     path("comments/list/", views.comment_list, name="comment_list"),
     # Rutas para los tickets (chekear)
     path("ticket/create/<int:event_id>", views.ticket_form, name="ticket_form"),
-    path("ticket/edit/<int:event_id>", views.ticket_form, name="ticket_edit"),
+    path("ticket/edit/<int:id>/", views.ticket_form, name="ticket_edit"),
     path("ticket/<int:id>/", views.ticket_detail, name="ticket_detail"),
     path("ticket/<int:id>/delete/", views.ticket_delete, name="ticket_delete"),
     path("tickets/", views.ticket_list, name="ticket_list"),

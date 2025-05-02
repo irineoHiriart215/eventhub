@@ -20,13 +20,26 @@
                         <p>{{ event.description }}</p>
                         <p><i class="fa fa-calendar"></i> {{ event.date }}</p>
                     </div>
+
+                    <p>Ticket: {{ ticket }}</p>
+                    <p>Cantidad: {{ ticket.quantity }}</p>
+                    <p>Tipo: {{ ticket.type }}</p>
+                    <p>Evento: {{ event.title }}</p>
+
         
-                    <form method="POST">
+                    <form 
+                    action="
+                    {% if ticket %}
+                        {% url 'ticket_edit' ticket.id %}
+                    {% else %}
+                        {% url 'ticket_form' event.id %}
+                    {% endif %}"
+                    method="POST">
                         {% csrf_token %}
                         <div class="vstack gap-3">
                             <div>
-                                {% if not ticket %}
-                                    <input type="hidden" name="event_id" id="event_id" value="{{ event_id }}">
+                                {% if not ticket.id %}
+                                    <input type="hidden" name="event_id" id="event_id" value="{{ event.id }}">
                                 {% endif %}
                                 <label for="quantity" class="form-label">Cantidad de entradas</label>
                                 <input 
