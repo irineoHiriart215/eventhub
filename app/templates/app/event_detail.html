@@ -118,6 +118,15 @@
             </div>
         </div>
         <!-- FIN COMENTARIOS -->
+
+        <!-- RATINGS -->
+        <div class="card mt-5">
+            <div class="card-body">
+                <h5 class="card-title">Calificaciones y resenas ({{ event.ratings.count }})</h5>
+                {% include "app/listaRatings.html" with event=event %}
+                {% include "app/crearRating.html" with event_id=event.id %}
+            </div>
         </div>
+    </div>
 </div>
 {% endblock %}

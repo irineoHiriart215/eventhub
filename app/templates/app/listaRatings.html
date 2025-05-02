@@ -1,0 +1,24 @@
+<!-- LISTA DE VALORACIONES -->
+{% if event.ratings.exists %}
+    {% for rating in event.ratings.all %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">
+                    {{ rating.user.username }} - {{ rating.created_at|date:"d/m/Y H:i" }}
+                </h6>
+                <h5>{{ rating.title }}</h5>
+                <p class="card-text">Puntuación: {{ rating.rating }}/5</p>
+                <p class="card-text">{{ rating.text }}</p>
+
+                {% if rating.user == request.user or event.organizer == request.user %}
+                    <div class="mt-2">
+                        <a href="{% url 'edit_rating' rating.id %}" class="btn btn-outline-primary btn-sm me-2">Editar</a>
+                        <a href="{% url 'delete_rating' rating.id %}" class="btn btn-outline-danger btn-sm">Eliminar</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <p class="mt-3">No hay valoraciones aún.</p>
+{% endif %}

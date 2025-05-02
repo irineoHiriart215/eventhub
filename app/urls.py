@@ -17,9 +17,15 @@ urlpatterns = [
     path("comments/<int:comment_id>/edit/", views.edit_comment, name="edit_comment"),
     path("comments/<int:comment_id>/delete/", views.delete_comment, name="delete_comment"),
     path("comments/list/", views.comment_list, name="comment_list"),
+    #rutas para las categorias
     path('categorias/', views.categoria_list, name="categoria"),
     path('categorias/detalle/<int:category_id>/', views.view_categoria, name="detail_categoria"),    
     path('categorias/create/', views.create_categoria, name="create_categoria"),
     path('categorias/edit/<int:category_id>/', views.edit_categoria, name="edit_categoria"),
     path('categorias/delete/<int:category_id>/', views.delete_categoria, name="delete_categoria"),
+    #rutas para los rating
+    path("events/<int:event_id>/ratings/", views.rating_list_event, name="rating_list_event"),
+    path("events/<int:event_id>/ratings/create/", views.create_rating, name="create_rating"),
+    path("ratings/<int:rating_id>/edit/", views.edit_rating, name="edit_rating"),
+    path("ratings/<int:rating_id>/delete/", views.delete_rating, name="delete_rating"),
 ]
