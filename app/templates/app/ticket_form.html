@@ -3,18 +3,10 @@
 {% block content %}
 <div class="container mt-5">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h1 class="mb-4">
-                {% if ticket.id %}
-                Editar ticket
-                {% else %}
-                Crear ticket
-                {% endif %}
-            </h1>
-            
+        <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-
+                    <h3 class="card-title">{% if ticket.id %} Editar ticket {% else %} Crear ticket {% endif %}</h5>
                     <div>
                         <h5>{{ event.title }}</h5>
                         <p>{{ event.description }}</p>
@@ -114,9 +106,98 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Resumen de compra</h5>
+                    <ul class="list-unstyled">
+                        <li class="d-flex justify-content-between">
+                            <span>Precio por entrada:</span>
+                            <strong  id="pricePerTicket">$0.00</strong>
+                        </li>
+                        <li class="d-flex justify-content-between">
+                            <span>Cantidad:</span>
+                            <strong id="quantitySummary">0</strong>
+                        </li>
+                        <li class="d-flex justify-content-between">
+                            <span>Subtotal:</span>
+                            <strong  id="subtotal">$0.00</strong>
+                        </li>
+                        <li class="d-flex justify-content-between">
+                            <span>Impuestos (10%):</span>
+                            <strong  id="tax">$0.00</strong>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span><strong>Total:</strong></span>
+                        <span id="total"><strong>$0.00</strong></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Informacion importante</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            Las entradas son personales e intransferibles.
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            Puedes solicitar un reembolso hasta 48hs antes del evento.
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            Recibiras tu entrada por correo electronico.
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            Presenta la entrada digital o impresa el dia del evento.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+    const priceMap = {
+        GENERAL: 50,
+        VIP: 100
+    }
 
+    const quantityInput = document.getElementById("quantity")
+    const typeSelect = document.getElementById("type")
 
+    const subtotalFinal = document.getElementById("subtotal")
+    const taxFinal = document.getElementById("tax")
+    const totalFinal = document.getElementById("total")
+    const pricePerTicketFinal = document.getElementById("pricePerTicket")
+    const quantitySummary = document.getElementById("quantitySummary")
 
+    function updateSummary() {
+        const quantity = parseInt(quantityInput.value) || 0;
+        const type = typeSelect.value;
+        const pricePerTicket = priceMap[type] || 0;
+
+        const subtotal = pricePerTicket * quantity;
+        const tax = subtotal * 0.1;
+        const total = subtotal + tax;
+
+        subtotalFinal.textContent = `$${subtotal.toFixed(2)}`
+        taxFinal.textContent = `$${tax.toFixed(2)}`
+        totalFinal.textContent = `$${total.toFixed(2)}`
+        pricePerTicketFinal.textContent = `$${pricePerTicket.toFixed(2)}`
+        quantitySummary.textContent = `${quantity}`
+    }
+    // Detectar cambios
+    quantityInput.addEventListener("input", updateSummary);
+    typeSelect.addEventListener("change", updateSummary);
+
+    // Calcular al cargar a pagina
+    document.addEventListener("DOMContentLoaded",updateSummary);
+</script>
 {% endblock %}
