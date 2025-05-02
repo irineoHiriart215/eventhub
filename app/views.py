@@ -217,7 +217,7 @@ def ticket_form(request, id=None):
     else:
         ticket=None
 
-    if request.method == "POST" and ticket.can_be_modified_by_user(request.user):
+    if request.method == "POST":
         quantity = request.POST.get("quantity")
         type_ = request.POST.get("type")
         event_id = request.POST.get("event_id")
