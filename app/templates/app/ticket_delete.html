@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-danger text-center">
+                <h4 class="alert-heading">¿Estas seguro de que quieres eliminar este Ticket?</h4>
+                <p class="mb-0">Esta accion no se podra deshacer</p>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{{ ticket.event.title }}</h5>
+                    <p class="card-text"><strong>Descripcion:</strong> {{ ticket.event.description }} </p>
+                    <p class="card-text">
+                        <strong>Fecha del evento:</strong> {{ ticket.event.scheduled_at }} <br>
+                        <strong>Cantidad de entradas:</strong> {{ ticket.quantity }} <br>
+                        <strong>Tipo de entradas:</strong> {{ ticket.get_type_display }} <br>
+                    </p>
+                </div>
+            </div>
+
+            <form action="{% url 'ticket_delete' ticket.id %}" method="POST">
+                {% csrf_token %}
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'ticket_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-danger">Eliminar ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

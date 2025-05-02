@@ -28,4 +28,12 @@ urlpatterns = [
     path("events/<int:event_id>/ratings/create/", views.create_rating, name="create_rating"),
     path("ratings/<int:rating_id>/edit/", views.edit_rating, name="edit_rating"),
     path("ratings/<int:rating_id>/delete/", views.delete_rating, name="delete_rating"),
+    # Rutas para los tickets (chekear)
+    path("ticket/create/<int:event_id>", views.ticket_form, name="ticket_form"),
+    path("ticket/edit/<int:id>/", views.ticket_form, name="ticket_edit"),
+    path("ticket/<int:id>/", views.ticket_detail, name="ticket_detail"),
+    path("ticket/<int:id>/delete/", views.ticket_delete, name="ticket_delete"),
+    path("tickets/", views.ticket_list, name="ticket_list"),
+
+          
 ]
