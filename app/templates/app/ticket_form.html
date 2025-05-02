@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">
+                {% if event.id %}
+                Editar ticket
+                {% else %}
+                Crear ticket
+                {% endif %}
+            </h1>
+            
+            <div class="card">
+                <div class="card-body">
+
+                    <div>
+                        <h5>{{ event.title }}</h5>
+                        <p>{{ event.description }}</p>
+                        <p><i class="fa fa-calendar"></i> {{ event.date }}</p>
+                        <p><i class="fa fa-star"></i> Rating promedio: {{ event.total_rating }}</p>
+                    </div>
+        
+                    <form action="{% url 'event_form' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="vstack gap-3">
+                            <div>
+                                <label for="quantity" class="form-label">Cantidad de entradas</label>
+                                <input 
+                                    class="form-control" 
+                                    id="quantity" 
+                                    required 
+                                    type="number" 
+                                    value="{{ ticket.quantity }}"
+                                    name="quantity" />
+                            </div>
+                            <div>
+                                <label for="type" class="form-label">Tipo de entradas</label>
+                                <select name="type" id="type">
+                                    <option value="" selected disabled>-Seleccione el tipo de entrada-</option>
+                                    <option value="GENERAL" {% if ticket.type == "GENERAL" %} selected {% endif %} >Entrada General</option>
+                                    <option value="VIP" {% if ticket.type == "VIP" %} selected {% endif %} >Entrada VIP</option>
+                                </select>
+                            </div>
+                            <hr />
+                            <h5 class="mt-4">Método de pago</h5>
+
+                            <div class="mb-3">
+                                <label for="card_number" class="form-label">Número de tarjeta</label>
+                                <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="expiry_date" class="form-label">Fecha de expiración</label>
+                                    <input type="text" class="form-control" id="expiry_date" name="expiry_date" placeholder="MM/AA" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cvv" class="form-label">CVV</label>
+                                    <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="card_name" class="form-label">Nombre en la tarjeta</label>
+                                <input type="text" class="form-control" id="card_name" name="card_name" placeholder="Juan Pérez" required>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" value="" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    Acepto los <a href="#">términos y condiciones</a> y la <a href="#">política de privacidad</a>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">Confirmar compra</button>
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}

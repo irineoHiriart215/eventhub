@@ -18,5 +18,10 @@ urlpatterns = [
     path("comments/<int:comment_id>/edit/", views.edit_comment, name="edit_comment"),
     path("comments/<int:comment_id>/delete/", views.delete_comment, name="delete_comment"),
     path("comments/list/", views.comment_list, name="comment_list"),
+    # Rutas para los tickets (chekear)
+    path("ticket/create/", views.ticket_form, name="ticket_form"),
+    path("ticket/<int:id>/edit/", views.ticket_form, name="ticket_edit"),
+    path("ticket/<int:id>/", views.ticket_detail, name="ticket_detail"),
+    path("ticket/<int:id>/delete/", views.ticket_delete, name="event_delete"),
           
 ]
