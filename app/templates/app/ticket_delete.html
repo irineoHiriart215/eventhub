@@ -11,18 +11,18 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title">{{ ticket.event.title }}</h5>
+                    <p class="card-text"><strong>Descripcion:</strong> {{ ticket.event.description }} </p>
                     <p class="card-text">
-                        <strong>Fecha del evento:</strong> {{ ticket.event.shedule_at }} <br>
+                        <strong>Fecha del evento:</strong> {{ ticket.event.scheduled_at }} <br>
                         <strong>Cantidad de entradas:</strong> {{ ticket.quantity }} <br>
-                        <strong>Tipo de entradas:</strong> {{ ticket.type }} <br>
+                        <strong>Tipo de entradas:</strong> {{ ticket.get_type_display }} <br>
                     </p>
                 </div>
             </div>
 
-            <form action="{% url 'ticket_delete' ticket.id %}">
+            <form action="{% url 'ticket_delete' ticket.id %}" method="POST">
                 {% csrf_token %}
                 <div class="d-flex justify-content-between">
-                    <!-- Aca supongo que al cancelar me manda a un detail, pero depende de donde este la opcion de eliminar el ticket -->
                     <a href="{% url 'ticket_list' %}" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-danger">Eliminar ticket</button>
                 </div>
