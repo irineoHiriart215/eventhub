@@ -209,24 +209,27 @@ def ticket_list(request):
 
 # View para crear o editar un ticket
 @login_required
-def ticket_form(request, id=None):
+def ticket_form(request, event_id=None, id=None):
+    ticket = None
+    event = None
     if id:
         ticket = get_object_or_404(Ticket, pk=id, user=request.user)
         if not ticket.can_be_modified_by_user(request.user):
             return redirect("home")
-    else:
-        ticket=None
+        event= ticket.event
+    elif event_id:
+        event = get_object_or_404(Event, pk=event_id)
 
     if request.method == "POST":
         quantity = request.POST.get("quantity")
         type_ = request.POST.get("type")
-        event_id = request.POST.get("event_id")
+        event_id_post = request.POST.get("event_id")
 
         if ticket:
             ticket.quantity = quantity
             ticket.type = type_
         else:
-            event = get_object_or_404(Event, pk=event_id)
+            event = get_object_or_404(Event, pk=event_id_post)
             ticket = Ticket.objects.create(
                 quantity = quantity,
                 type=type_,
@@ -235,7 +238,8 @@ def ticket_form(request, id=None):
             )
         ticket.save()
         return redirect("ticket_list")
-    return render(request, "app/ticket_form.html", {"ticket": ticket})
+    
+    return render(request, "app/ticket_form.html", { "ticket": ticket, "event" : event})
 
 # View para ver el detalle de un ticket
 @login_required
