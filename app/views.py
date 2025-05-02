@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import Event, User
+from .models import Event, Ticket, User
 from .models import Event, Comment
 
 
@@ -200,3 +200,9 @@ def delete_comment(request, comment_id):
 def comment_list(request):
     comments = Comment.objects.all()
     return render(request, "app/comment_list.html", {"comments": comments})
+
+@login_required
+def ticket_list(request):
+    # Obtener solo los tickets del usuario logueado
+    tickets = Ticket.object.filter(user=request.user)
+    return render(request, 'app/ticket_list.html', {'tickets': tickets})
