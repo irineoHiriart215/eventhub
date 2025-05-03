@@ -43,6 +43,12 @@
                                title="Ver detalle">
                                 <i class="bi bi-eye" aria-hidden="true"></i>
                             </a>
+                            <a href="{% url 'ticket_form' event.id %}"
+                               class="btn btn-sm btn-outline-primary"
+                               aria-label="Comprar entradas"
+                               title="Comprar entradas">
+                                <i class="bi bi-cart" aria-hidden="true"></i>
+                            </a>
                             {% if user_is_organizer %}
                                 <a href="{% url 'event_edit' event.id %}"
                                     class="btn btn-sm btn-outline-secondary"

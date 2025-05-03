@@ -50,6 +50,9 @@
                                 {% navbar_link 'events' 'Eventos' %}
                             </li>
                             <li class="nav-item">
+                                {% navbar_link 'ticket_list' 'Mis tickets' %}
+                            </li>
+                            <li class="nav-item">
                                 {% navbar_link 'categoria' 'Categorias' %}
                             </li>
                             <li class="nav-item">
@@ -85,6 +88,8 @@
     </nav>
 
     {% block content %}
+    {% endblock %}
+    {% block scripts %}
     {% endblock %}
 </body>
 <script
