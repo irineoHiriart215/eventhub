@@ -29,4 +29,10 @@ urlpatterns = [
     path("events/<int:event_id>/ratings/create/", views.create_rating, name="create_rating"),
     path("ratings/<int:rating_id>/edit/", views.edit_rating, name="edit_rating"),
     path("ratings/<int:rating_id>/delete/", views.delete_rating, name="delete_rating"),
+    #rutas para venue
+    path("venue/create/", views.create_venue, name="create_venue"),
+    path("venue/", views.venue_list, name="venue"),
+    path("venue/<int:venue_id>/edit/", views.edit_venue , name="edit_venue"),
+    path("venue/<int:venue_id>/", views.view_venue, name="detail_venue"),
+    path("venue/<int:venue_id>/delete/", views.delete_venue, name="delete_venue")
 ]

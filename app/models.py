@@ -37,12 +37,27 @@ class Category(models.Model):
     def user_is_organizer(self, user):
         return user.is_organizer
 
+class Venue(models.Model):  
+    name  = models.CharField(max_length=200)
+    city = models.CharField(max_length=100)
+    address = models.CharField(max_length=200)
+    capacity = models.IntegerField()
+    contact = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+    def user_is_organizer(self, user):
+        return user.is_organizer
+
+
 class Event(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="events")
+    venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -62,7 +77,7 @@ class Event(models.Model):
         return errors
 
     @classmethod
-    def new(cls, title, description, scheduled_at, organizer, category):
+    def new(cls, title, description, scheduled_at, organizer, category, venue):
         errors = Event.validate(title, description, scheduled_at)
 
         if len(errors.keys()) > 0:
@@ -73,18 +88,19 @@ class Event(models.Model):
             description=description,
             scheduled_at=scheduled_at,
             organizer=organizer,
-            category=category
+            category=category,
+            venue=venue
         )
 
         return True, None
 
-    def update(self, title, description, scheduled_at, organizer, category):
+    def update(self, title, description, scheduled_at, organizer, category, venue):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
         self.category = category or self.category
-
+        self.venue = venue or self.venue
         self.save()
         
 class Comment(models.Model):
@@ -115,4 +131,4 @@ class Rating(models.Model):
         return self.user == user or self.event.organizer == user
     
 
-    
+

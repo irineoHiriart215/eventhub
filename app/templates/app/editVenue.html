@@ -1,0 +1,86 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">Editar recinto</h1>
+
+            <div class="card">
+                <div class="card-body">
+                    <form
+                        action="{% url 'edit_venue' venue.id %}"
+                        method="POST"
+                    >
+                        {% csrf_token %}
+                        <div class="vstack gap-3">
+                            <div>
+                                <label for="title" class="form-label">Nombre del recinto</label>
+                                <input
+                                    class="form-control"
+                                    id="name"
+                                    required=""
+                                    type="text"
+                                    value="{{ venue.name }}"
+                                    name="name"
+                                />
+                            </div>
+                            <div>
+                                <label for="city" class="form-label">Ciudad</label>
+                                <input
+                                    class="form-control"
+                                    id="city"
+                                    required=""
+                                    type="text"
+                                    value="{{ venue.city }}"
+                                    name="city"
+                                />
+                            </div>
+                            <div>
+                                <label for="address" class="form-label">Dirección</label>
+                                <input
+                                    class="form-control"
+                                    id="address"
+                                    required=""
+                                    type="text"
+                                    value="{{ venue.address }}"
+                                    name="address"
+                                />
+                            </div>
+                            <div>
+                                <label for="capacity" class="form-label">Capacidad</label>
+                                <input
+                                    class="form-control"
+                                    id="capacity"
+                                    required=""
+                                    type="number"
+                                    value="{{ venue.capacity }}"
+                                    name="capacity"
+                                />
+                            </div>
+                            <div>
+                                <label for="contact" class="form-label">Datos de Contacto</label>
+                                <textarea
+                                    class="form-control"
+                                    id="contact"
+                                    name="contact"
+                                    rows="2"
+                                    required=""
+                                >{{ venue.contact }}</textarea>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                Actualizar Recinto
+                            </button>
+                            <a
+                                href="{% url 'venue' %}"
+                                class="btn btn-outline-secondary"
+                                >Cancelar</a
+                            >
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

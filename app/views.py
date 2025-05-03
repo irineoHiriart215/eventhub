@@ -7,7 +7,7 @@ from django.contrib import messages
 
 
 from .models import Event, User
-from .models import Event, Comment, Category, Rating
+from .models import Event, Comment, Category, Rating, Venue
 
 
 def register(request):
@@ -103,6 +103,7 @@ def event_form(request, id = None):
         return redirect("events")
 
     categorias = Category.objects.all()
+    venues = Venue.objects.all()
 
     if request.method == "POST":
         title = request.POST.get("title")
@@ -119,12 +120,15 @@ def event_form(request, id = None):
 
         category_id= request.POST.get("categoria")
         category= get_object_or_404(Category,id=category_id)
+
+        venue_id= request.POST.get("venue")
+        venue= get_object_or_404(Venue, id=venue_id)
         
         if id is None:
-            Event.new(title, description, scheduled_at, request.user, category)
+            Event.new(title, description, scheduled_at, request.user, category, venue)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user, category)
+            event.update(title, description, scheduled_at, request.user, category, venue)
 
         return redirect("events")
 
@@ -135,7 +139,7 @@ def event_form(request, id = None):
     return render(
         request,
         "app/event_form.html",
-        {"event": event, "user_is_organizer": request.user.is_organizer, "categorias": categorias},
+        {"event": event, "user_is_organizer": request.user.is_organizer, "categorias": categorias, "venues": venues},
     )
 
 
@@ -393,3 +397,95 @@ def rating_list_event(request,event_id):
         request,
         "app/listaRatings.html",
         {"ratings": ratings})
+
+
+@login_required
+def create_venue(request):
+    user = request.user
+    venue = {}
+    
+    if not user.is_organizer:
+        return redirect("Recinto")
+
+    if request.method == "POST":
+        name = request.POST.get("name").strip()
+        address = request.POST.get("address").strip()
+        city = request.POST.get("city").strip()
+        capacity = request.POST.get("capacity")
+        contact = request.POST.get("contact").strip()
+
+        errors = []
+
+        if not name:
+            errors.append("Debe ingresar un nombre.")
+    
+        if errors:
+            for error in errors: 
+                messages.error(request, error)
+        else:
+            venue = Venue.objects.create(
+                name = name,
+                address = address,
+                city = city,
+                capacity = capacity,
+                contact = contact)
+            messages.success(request, "Recinto creado")
+            return redirect('venue')
+
+    return render(
+        request, 
+        "app/crearVenue.html",
+        {"venue": venue, "user_is_organizer": request.user.is_organizer},
+    )
+
+@login_required
+def venue_list(request):
+    venues = Venue.objects.all()
+    return render(request, "app/ListVenue.html" ,  {"venues": venues, "user_is_organizer": request.user.is_organizer},)
+    
+
+@login_required
+def edit_venue(request, venue_id):
+    venue = get_object_or_404(Venue, pk=venue_id)
+
+    if not request.user.is_organizer:
+        return redirect("venue")
+
+    if request.method == "POST":
+        venue.name = request.POST.get("name")
+        venue.address = request.POST.get("address")
+        venue.city = request.POST.get("city")
+        venue.capacity = request.POST.get("capacity")
+        venue.contact = request.POST.get("contact")
+        venue.save()
+        return redirect ('venue')
+        
+    return render(request, "app/editVenue.html" ,  {"venue": venue, "user_is_organizer": request.user.is_organizer},)
+    
+
+@login_required
+def view_venue(request, venue_id):
+    venue = get_object_or_404(Venue, pk=venue_id)
+    return render(
+        request,
+        "app/detailVenue.html",
+        {"venue": venue, "user_is_organizer": request.user.is_organizer},
+        )
+    
+@login_required
+def delete_venue(request, venue_id):
+    venue = get_object_or_404(Venue , pk=venue_id)
+    if not request.user.is_organizer:
+        return redirect("events")
+
+    if request.method == "POST":
+        venue.delete()
+        return redirect("venue")
+
+    return render(
+        request,
+        "app/deleteVenue.html",
+       {"venue": venue, "user_is_organizer": request.user.is_organizer},
+    )
+
+    

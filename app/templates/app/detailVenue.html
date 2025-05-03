@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">Detalle Recinto</h1>
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    {% csrf_token %}
+                    <div class="vstack gap-4">
+                        <div>
+                            <h6 class="text-muted mb-1">Nombre del recinto</h6>
+                            <p class="fs-5 mb-0">{{venue.name}}</p>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Ciudad</h6>
+                            <p class="fs-5 mb-0">{{venue.city}}</p>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Direccion</h6>
+                            <p class="fs-5 mb-0">{{venue.address}}</p>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Capacidad</h6>
+                            <p class="fs-5 mb-0">{{venue.capacity}}</p>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Contacto</h6>
+                            <p class="fs-5 mb-0">{{venue.contact}}</p>
+                        </div>
+                        <div>
+                            <a
+                                href="{% url 'edir_venue' venue.id %}"
+                                class="btn btn-outline-primary"
+                                >Editar</a
+                            >
+                            <a
+                                href="{% url 'venue' %}"
+                                class="btn btn-outline-secondary"
+                                >Volver</a
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

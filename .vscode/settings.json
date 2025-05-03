@@ -1,7 +1,13 @@
 {
     "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "python.languageServer": "Pylance",
     "python.analysis.typeCheckingMode": "basic",
+    "github.copilot.enable": {
+        "*": false,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    }
 }
