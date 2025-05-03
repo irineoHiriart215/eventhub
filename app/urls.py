@@ -33,8 +33,8 @@ urlpatterns = [
     path("venue/", views.venue_list, name="venue"),
     path("venue/<int:venue_id>/edit/", views.edit_venue , name="edit_venue"),
     path("venue/<int:venue_id>/", views.view_venue, name="detail_venue"),
-    path("venue/<int:venue_id>/delete/", views.delete_venue, name="delete_venue")
-    # Rutas para los tickets (chekear)
+    path("venue/<int:venue_id>/delete/", views.delete_venue, name="delete_venue"),
+    # Rutas para los tickets 
     path("ticket/create/<int:event_id>", views.ticket_form, name="ticket_form"),
     path("ticket/edit/<int:id>/", views.ticket_form, name="ticket_edit"),
     path("ticket/<int:id>/", views.ticket_detail, name="ticket_detail"),
