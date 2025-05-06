@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-8">
@@ -38,7 +48,7 @@
                             </div>
                             <div>
                                 <label for="type" class="form-label">Tipo de entradas</label>
-                                <select name="type" id="type">
+                                <select name="type" id="type" required>
                                     <option value="" selected disabled>-Seleccione el tipo de entrada-</option>
                                     <option value="GENERAL" {% if ticket.type == "GENERAL" %} selected {% endif %} >Entrada General</option>
                                     <option value="VIP" {% if ticket.type == "VIP" %} selected {% endif %} >Entrada VIP</option>
@@ -55,7 +65,11 @@
                                     id="card_number" 
                                     name="card_number" 
                                     placeholder="1234 5678 9012 3456" 
-                                    required>
+                                    maxlength="19"
+                                    required
+                                    pattern="(\d{4}[\s\-]?)\d{4}[\s\-]?\d{4}[\s\-]?\d{4}"
+                                    title="El número de tarjeta debe tener 16 dígitos, divididos en 4 grupos de 4."
+                                >
                             </div>
 
                             <div class="row">
@@ -67,7 +81,10 @@
                                         id="expiry_date" 
                                         name="expiry_date" 
                                         placeholder="MM/AA" 
-                                        required>
+                                        maxlength="5"
+                                        required 
+                                        pattern="(0[1-9]|1[0-2])\/\d{2}" 
+                                        title="Ingresa una fecha válida en formato MM/AA (ej: 07/26)">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="cvv" class="form-label">CVV</label>
@@ -77,7 +94,10 @@
                                         id="cvv" 
                                         name="cvv" 
                                         placeholder="123" 
-                                        required>
+                                        maxlength="3" 
+                                        required
+                                        pattern="\d{3}" 
+                                        title="El CVV debe tener 3 dígitos">
                                 </div>
                             </div>
 
@@ -89,7 +109,10 @@
                                     id="card_name" 
                                     name="card_name" 
                                     placeholder="Juan Pérez" 
-                                    required>
+                                    required
+                                    maxlength= "50"
+                                    pattern="[A-Za-z\s]+" 
+                                    title="Ingrese su nombre como figura en la targeta"
                             </div>
 
                             <div class="form-check mb-3">
@@ -164,6 +187,7 @@
 {% endblock %}
 {% block scripts %}
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
     const priceMap = {
         GENERAL: 50,
         VIP: 100
@@ -199,5 +223,46 @@
 
     // Calcular al cargar a pagina
     document.addEventListener("DOMContentLoaded",updateSummary);
+
+    const cardInput = document.getElementById('card_number');
+    cardInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        value = value.substring(0, 16);
+
+        // Insertar espacio cada 4 dígitos
+        let formattedValue = '';
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0) {
+                formattedValue += ' ';
+            }
+            formattedValue += value[i];
+        }
+        e.target.value = formattedValue;
+    });
+
+    const expiryInput = document.getElementById("expiry_date");
+    expiryInput.addEventListener("input", function(e) {
+        let value = expiryInput.value.replace(/\D/g, ''); // solo números
+        if (value.length >= 3) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4);
+        }
+        expiryInput.value = value;
+    });
+
+    const cvvInput = document.getElementById("cvv");
+    cvvInput.addEventListener("input", function(e) {
+        let value = cvvInput.value.replace(/\D/g, ''); // solo números
+        if (value.length > 3) {
+            value = value.slice(0, 3); // Limitar a 3 dígitos
+        }
+        cvvInput.value = value;
+    });
+    const cardNameInput = document.getElementById("card_name");
+
+    cardNameInput.addEventListener("input", function(e) {
+        let value = cardNameInput.value.replace(/[^A-Za-z\s]/g, ''); // eliminar todo lo que no sea letra o espacio
+        cardNameInput.value = value;
+    });
+});
 </script>
 {% endblock %}
