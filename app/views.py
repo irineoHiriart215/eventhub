@@ -375,12 +375,19 @@ def create_rating(request,event_id):
 
         errors = []
 
-        if not title_input:
-            errors.append("Debe ingresar un nombre.")
-        
+        if not title_input.strip():
+            errors.append("Debe ingresar un título válido.")
+
         if not rating_input:
-            errors.append("Debe ingresar un rating")
-        
+            errors.append("Debe ingresar un rating.")
+        else:
+            try:
+                rating_value = int(rating_input)
+                if rating_value < 1 or rating_value > 5:
+                    errors.append("El rating debe estar entre 1 y 5.")
+            except ValueError:
+                errors.append("El rating debe ser un número entero.")
+
         if errors:
             for error in errors:
                 messages.error(request, error)
@@ -403,17 +410,41 @@ def create_rating(request,event_id):
 @login_required
 def edit_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
- 
+
     if not rating.can_user_delete_or_edit(request.user):
         messages.error(request, "No puedes editar este rating.")
         return redirect('event_detail', id=rating.event.id)
 
     if request.method == "POST":
-        rating.title = request.POST.get("title")
-        rating.text = request.POST.get("text")
-        rating.rating = request.POST.get("rating")
-        rating.save()
-        return redirect('event_detail', id=rating.event.id)
+        title_input = request.POST.get("title", "").strip()
+        text_input = request.POST.get("text", "").strip()
+        rating_input = request.POST.get("rating", "").strip()
+
+        errors = []
+
+        if not title_input:
+            errors.append("Debe ingresar un título válido.")
+        
+        if not rating_input:
+            errors.append("Debe ingresar un rating.")
+        else:
+            try:
+                rating_value = int(rating_input)
+                if rating_value < 1 or rating_value > 5:
+                    errors.append("El rating debe estar entre 1 y 5.")
+            except ValueError:
+                errors.append("El rating debe ser un número entero.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            rating.title = title_input
+            rating.text = text_input
+            rating.rating = rating_value
+            rating.save()
+            messages.success(request, "Rating actualizado correctamente.")
+            return redirect('event_detail', id=rating.event.id)
 
     return render(
         request,
@@ -424,6 +455,7 @@ def edit_rating(request, rating_id):
 @login_required
 def delete_rating(request, rating_id):
     rating = get_object_or_404(Rating, pk=rating_id)
+    
     if not rating.can_user_delete_or_edit(request.user):
         messages.error(request, "No puedes eliminar este rating.")
         return redirect("event_detail", id=rating.event.id)

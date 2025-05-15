@@ -1,5 +1,6 @@
 import uuid
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 
@@ -122,7 +123,9 @@ class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     title = models.CharField(max_length=200)
     text = models.TextField()
-    rating = models.IntegerField()
+    rating = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
