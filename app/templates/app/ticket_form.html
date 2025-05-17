@@ -12,7 +12,7 @@
                         <p>{{ event.description }}</p>
                         <p><i class="fa fa-calendar"></i> {{ event.date }}</p>
                     </div>
-        
+
                     <form 
                     action="
                     {% if ticket %}
@@ -36,6 +36,17 @@
                                     value="{{ ticket.quantity }}"
                                     name="quantity" />
                             </div>
+                            
+                            {% if messages %}
+                            <div class="alert-messages mb-3">
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }}">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
                             <div>
                                 <label for="type" class="form-label">Tipo de entradas</label>
                                 <select name="type" id="type">
@@ -44,6 +55,7 @@
                                     <option value="VIP" {% if ticket.type == "VIP" %} selected {% endif %} >Entrada VIP</option>
                                 </select>
                             </div>
+
                             <hr />
 
                             <h5 class="mt-4">Método de pago</h5>

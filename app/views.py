@@ -236,6 +236,15 @@ def ticket_form(request, event_id=None, id=None):
             ticket.type = type_
         else:
             event = get_object_or_404(Event, pk=event_id_post)
+
+            quantity = int(quantity)
+            existing_tickets = Ticket.objects.filter(user=request.user, event=event)
+            total_quantity = sum(t.quantity for t in existing_tickets)
+
+            if total_quantity + quantity > 4:
+                messages.error(request, f"No podés comprar más de 5 entradas para este evento. Ya tenés {total_quantity}.")
+                return render(request, "app/ticket_form.html", { "ticket": ticket, "event": event })
+
             ticket = Ticket.objects.create(
                 quantity = quantity,
                 type=type_,
