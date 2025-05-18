@@ -149,21 +149,27 @@ def create_comment(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
 
     if request.method == "POST":
-        text = request.POST.get("text")
+        title = request.POST.get("title", "").strip() 
+        text = request.POST.get("text", "").strip()
         
-        # Crear el comentario y asociarlo con el evento y el usuario
-        comment = Comment.objects.create(
-            event=event,
-            user=request.user,
-            text=text
-        )
+        if title and text:
+            # Crear el comentario con título y texto
+            comment = Comment.objects.create(
+                event=event,
+                user=request.user,
+                title=title,
+                text=text
+            )
+            return redirect('event_detail', id=event.id)
+        else:
+            error_message = "Ambos campos son obligatorios."
+            return render(
+                request,
+                "app/create_comment.html",
+                {"event": event, "error_message": error_message}
+            )
 
-        # Redirigir de nuevo a la página del evento
-        return redirect('event_detail', id=event.id)
-
-    # Si no es POST, redirigir al detalle del evento (por ejemplo, si alguien intenta acceder a esta vista sin enviar datos)
-    return redirect('event_detail', id=event.id)
-
+    return render(request, "app/create_comment.html", {"event": event})
 
 #Vista para editar un comentario
 @login_required
@@ -174,26 +180,38 @@ def edit_comment(request, comment_id):
         return redirect("event_detail", id=comment.event.id)
 
     if request.method == "POST":
-        comment.text = request.POST.get("text")
-        comment.save()
-        return redirect("event_detail", id=comment.event.id)
+        title = request.POST.get("title", "").strip()
+        text = request.POST.get("text", "").strip()
 
+        if title and text:
+            comment.title = title
+            comment.text = text
+            comment.save()
+            return redirect("event_detail", id=comment.event.id)
+        else:
+            error_message = "Ambos campos son obligatorios."
+    else:
+        error_message = None
     return render(
-        request,
-        "app/edit_comment.html",
-        {"comment": comment, "event": comment.event},
-    )
+                request,
+               "app/edit_comment.html",
+                {"comment": comment, "event": comment.event, "error_message": error_message}
+            )
     
 #Vista para eliminar un comentario
 @login_required
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
 
-    if not comment.can_user_delete(request.user):
-        return redirect("event_detail", id=comment.event.id)
+     # Lógica de permiso según el template
+    if comment.user != request.user and event.organizer != request.user:
+        messages.error(request, "No tenés permiso para eliminar este comentario.")
+        return redirect("event_detail", id=event.id)
+        event = comment.event
 
     if request.method == "POST":
         comment.delete()
+        messages.success(request, "Comentario eliminado correctamente.")
         return redirect("event_detail", id=comment.event.id)
 
     return render(
