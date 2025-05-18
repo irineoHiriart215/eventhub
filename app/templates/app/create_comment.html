@@ -1,0 +1,15 @@
+<form method="POST">
+    {% csrf_token %}
+    
+    <div class="mb-3">
+        <label for="title" class="form-label">Título *</label>
+        <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="text" class="form-label">Comentario *</label>
+        <textarea class="form-control" id="text" name="text" rows="4" required></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enviar comentario</button>
+</form>

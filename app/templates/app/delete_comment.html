@@ -1,12 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2>¿Estás seguro de que querés eliminar este comentario?</h2>
-  <p>{{ comment.content }}</p>
+<div class="container mt-5">
+  <div class="card">
+      <div class="card-body text-center">
+          <h3 class="mb-4">¿Estás seguro que deseas eliminar este comentario?</h3>
+          <p class="text-muted">
+              "{{ comment.text }}"
+              <br>
+              <small class="d-block mt-2">Publicado por {{ comment.user.username }} el {{ comment.created_at|date:"d/m/Y H:i" }}</small>
+          </p>
 
-  <form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Eliminar</button>
-    <a href="{% url 'event_detail' comment.event.id %}" class="btn btn-secondary">Cancelar</a>
-  </form>
+          <form method="POST">
+              {% csrf_token %}
+              <a href="{% url 'event_detail' comment.event.id %}" class="btn btn-secondary me-3">Cancelar</a>
+              <button type="submit" class="btn btn-danger">Eliminar</button>
+          </form>
+      </div>
+  </div>
+</div>
 {% endblock %}
