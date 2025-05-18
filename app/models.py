@@ -106,6 +106,7 @@ class Event(models.Model):
         self.save()
         
 class Comment(models.Model):
+    title = models.CharField(max_length=100, default="Sin título")
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="comments")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     text = models.TextField()
@@ -113,7 +114,7 @@ class Comment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.text[:30]}"
+        return f"{self.user.username} - {self.title[:30]}"
 
     def can_user_delete(self, user):
         return self.user == user or self.event.organizer == user
