@@ -7,7 +7,7 @@ from django.contrib import messages
 
 
 from .models import Event, User, Ticket
-from .models import Event, Comment, Category, Rating, Venue
+from .models import Comment, Category, Rating, Venue
 
 
 def register(request):
@@ -243,6 +243,10 @@ def ticket_form(request, event_id=None, id=None):
         event= ticket.event
     elif event_id:
         event = get_object_or_404(Event, pk=event_id)
+
+    if event.organizer == request.user:
+        messages.error(request, "El organizador no tiene permiso para comprar tickets de su propio evento.")
+        return redirect("home")
 
     if request.method == "POST":
         quantity = request.POST.get("quantity")
