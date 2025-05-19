@@ -249,24 +249,41 @@ def ticket_form(request, event_id=None, id=None):
         return redirect("home")
 
     if request.method == "POST":
-        quantity = request.POST.get("quantity")
-        type_ = request.POST.get("type")
+        quantity_input = request.POST.get("quantity")
+        type_input = request.POST.get("type")
         event_id_post = request.POST.get("event_id")
 
-        if ticket:
-            ticket.quantity = quantity
-            ticket.type = type_
+        # Validaciones server-side
+        errors = []
+        
+        valid_types = [choice[0] for choice in Ticket.TICKET_TYPES]
+        if type_input not in valid_types:
+            errors.append("El tipo de entrada no es valido.")
+        
+        try:
+            quantity_value = int(quantity_input)
+            if quantity_value < 0:
+                errors.append("La cantidad de tickets comprados debe ser mayo a 0.")
+        except (ValueError, TypeError):
+            errors.append("El tipo de dato ingresado en cantidad es incorrecto. Debe ser un entero")
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
         else:
-            event = get_object_or_404(Event, pk=event_id_post)
-            ticket = Ticket.objects.create(
-                quantity = quantity,
-                type=type_,
-                user=request.user,
-                event=event
-            )
-        ticket.save()
-        return redirect("ticket_list")
-    
+            if ticket:
+                ticket.quantity = quantity_input
+                ticket.type = type_input
+                ticket.save()
+            else:
+                event = get_object_or_404(Event, pk=event_id_post)
+                ticket = Ticket.objects.create(
+                    quantity = quantity_input,
+                    type=type_input,
+                    user=request.user,
+                    event=event
+                )
+            return redirect("ticket_list")
     return render(request, "app/ticket_form.html", { "ticket": ticket, "event" : event})
 
 # View para ver el detalle de un ticket
