@@ -274,6 +274,7 @@ def ticket_form(request, event_id=None, id=None):
             if ticket:
                 ticket.quantity = quantity_input
                 ticket.type = type_input
+                messages.success(request, "Se modifico la compra con exito.")
                 ticket.save()
             else:
                 event = get_object_or_404(Event, pk=event_id_post)
@@ -283,6 +284,7 @@ def ticket_form(request, event_id=None, id=None):
                     user=request.user,
                     event=event
                 )
+                messages.success(request, "Se realizo la compra con exito.")
             return redirect("ticket_list")
     return render(request, "app/ticket_form.html", { "ticket": ticket, "event" : event})
 
@@ -299,6 +301,7 @@ def ticket_delete(request, id):
 
     if request.method=="POST" and ticket.can_be_deleted_by_user(request.user):
         ticket.delete()
+        messages.success(request, "Se elimino la compra con exito.")
         return redirect("ticket_list")
     return render(request, "app/ticket_delete.html", {"ticket": ticket})
     
