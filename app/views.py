@@ -246,7 +246,7 @@ def ticket_form(request, event_id=None, id=None):
 
     if event.organizer == request.user:
         messages.error(request, "El organizador no tiene permiso para comprar tickets de su propio evento.")
-        return redirect("home")
+        return redirect("events")
 
     if request.method == "POST":
         quantity_input = request.POST.get("quantity")
