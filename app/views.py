@@ -302,16 +302,7 @@ def ticket_form(request, event_id=None, id=None):
         if quantity > available:
             messages.error(request, f"No hay suficiente cupo disponible para este tipo de entrada. Solo quedan {available} entradas.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
-
-        if total_available == 0:
-            messages.error(request, "No hay mas cupo disponible")
-            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
-
-        if quantity > total_available:
-            messages.error(request, f"No hay suficiente cupo disponible en el evento. Solo quedan {total_available} entradas.")
-            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
-
-        # Validaciones server-side
+     # Validaciones server-side
         errors = []
         
         valid_types = [choice[0] for choice in Ticket.TICKET_TYPES]
