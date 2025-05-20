@@ -337,6 +337,7 @@ class EventDeleteViewTest(BaseEventTestCase):
 #simula la creación de un ticket a través de la view y verificar que no se permite cuando el evento está lleno       
 class TicketIntegrationTest(TestCase):
     def setUp(self):
+        self.organizer = User.objects.create_user(username='organizer', password='12345')
         self.user = User.objects.create_user(username='testuser', password='12345')
         
         # Crear categoría válida
@@ -354,7 +355,7 @@ class TicketIntegrationTest(TestCase):
             vip_capacity=0, 
             description="Evento para test", 
             scheduled_at=timezone.now() + timedelta(days=1),
-            organizer=self.user,
+            organizer=self.organizer,
             category=self.category,  # Necesitas un objeto Category válido
             venue=self.venue  # Necesitas un objeto Venue válido
         )
