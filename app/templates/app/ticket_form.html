@@ -4,7 +4,7 @@
 {% if messages %}
     <div class="container mt-3">
         {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show {% if message.tags == 'error' %}fs-4 fw-bold text-danger{% endif %}" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -16,7 +16,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <h3 class="card-title">{% if ticket.id %} Editar ticket {% else %} Crear ticket {% endif %}</h5>
+                    <h3 class="card-title">{% if ticket.id %} Editar ticket {% else %} Crear ticket {% endif %}</h3>
                     <div>
                         <h5>{{ event.title }}</h5>
                         <p>{{ event.description }}</p>
@@ -112,7 +112,7 @@
                                     required
                                     maxlength= "50"
                                     pattern="[A-Za-z\s]+" 
-                                    title="Ingrese su nombre como figura en la targeta"
+                                    title="Ingrese su nombre como figura en la targeta">
                             </div>
 
                             <div class="form-check mb-3">
@@ -222,7 +222,7 @@
     typeSelect.addEventListener("change", updateSummary);
 
     // Calcular al cargar a pagina
-    document.addEventListener("DOMContentLoaded",updateSummary);
+    updateSummary();
 
     const cardInput = document.getElementById('card_number');
     cardInput.addEventListener('input', function(e) {
