@@ -1,11 +1,15 @@
-import datetime
 import re
+import time
+from datetime import datetime, timedelta, timezone
+from django.test import TestCase, Client
 
 from django.utils import timezone
-from playwright.sync_api import expect
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.contrib.auth.models import User
+from django.urls import reverse 
+from app.models import User
 
-from app.models import Event, User
-
+from app.models import Category, Event, Ticket, Venue
 from app.test.test_e2e.base import BaseE2ETest
 
 
@@ -311,3 +315,54 @@ class EventCRUDTest(EventBaseTest):
 
         # Verificar que el evento eliminado ya no aparece en la tabla
         expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
+        
+           
+#test e2e para evitar compras cuando no hay cupo disponible  
+class TicketEndToEndCapacityTest(TestCase):
+    def setUp(self):
+        # Cliente de prueba
+        self.client = Client()
+
+        # Crear usuario y loguearlo
+        self.user = User.objects.create_user(username="testuser", password="password123")
+        self.client.login(username="testuser", password="password123")
+
+        # Crear categoría y venue
+        self.category = Category.objects.create(name="Concierto")
+        self.venue = Venue.objects.create(
+            name="Teatro Principal",
+            city="Centro",
+            address="Calle Falsa 123",
+            capacity=100,
+            contact="1234-5678"
+            )
+
+        # Crear evento con capacidad limitada
+        self.event = Event.objects.create(
+            title="Evento lleno",
+            description="No hay mas cupo disponible",
+            scheduled_at=datetime.now() + timedelta(days=1),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue,
+            general_capacity=2,
+            vip_capacity=0,
+        )
+
+        # Crear tickets para agotar el cupo GENERAL
+        Ticket.objects.create(event=self.event, user=self.user, type="GENERAL", quantity=2)
+
+    def test_no_se_puede_comprar_si_no_hay_cupo(self):
+        url = reverse("ticket_form", args=[self.event.id])
+
+        response = self.client.post(url, {
+            "quantity": 1,
+            "type": "GENERAL",
+            "event_id": self.event.id
+        })
+
+        # Asegurarse de que no redirige (porque debe mostrar error)
+        self.assertEqual(response.status_code, 200)
+
+        # El mensaje esperado debería estar en la respuesta
+        self.assertContains(response, "No hay mas cupo disponible", html=True)
