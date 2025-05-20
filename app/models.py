@@ -168,7 +168,12 @@ class Ticket(models.Model):
         """Permite eliminar si es el dueño del ticket"""
         return self.user == user
     
+    @classmethod
+    def can_purchase(cls, user, event):
+        tickets_bought = cls.objects.filter(user=user, event=event).aggregate(total=models.Sum('quantity'))['total'] or 0
+        return tickets_bought < 4
+    
     def __str__(self):
         """Cuando se imprima un objeto en especifico se vera de la siguiente forma: VIP x2 - juanito - A1B2C3D4E5F6"""
         return f"{self.type} x{self.quantity} - {self.user.username} - {self.ticket_code}"
-        
+    
