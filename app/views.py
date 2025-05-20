@@ -8,7 +8,7 @@ from django.db.models import Sum
 
 
 from .models import Event, User, Ticket
-from .models import Event, Comment, Category, Rating, Venue
+from .models import Comment, Category, Rating, Venue
 
 
 def register(request):
@@ -247,9 +247,13 @@ def ticket_form(request, event_id=None, id=None):
     elif event_id:
         event = get_object_or_404(Event, pk=event_id)
 
+    if event.organizer == request.user:
+        messages.error(request, "El organizador no tiene permiso para comprar tickets de su propio evento.")
+        return redirect("events")
+
     if request.method == "POST":
-        quantity = request.POST.get("quantity")
-        type_ = request.POST.get("type")
+        quantity_input = request.POST.get("quantity")
+        type_input = request.POST.get("type")
         event_id_post = request.POST.get("event_id")
         
         if not event and event_id_post:
@@ -307,21 +311,40 @@ def ticket_form(request, event_id=None, id=None):
             messages.error(request, f"No hay suficiente cupo disponible en el evento. Solo quedan {total_available} entradas.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
 
-        if ticket:
-            ticket.quantity = quantity
-            ticket.type = type_
+        # Validaciones server-side
+        errors = []
+        
+        valid_types = [choice[0] for choice in Ticket.TICKET_TYPES]
+        if type_input not in valid_types:
+            errors.append("El tipo de entrada no es valido.")
+        
+        try:
+            quantity_value = int(quantity_input)
+            if quantity_value < 0:
+                errors.append("La cantidad de tickets comprados debe ser mayo a 0.")
+        except (ValueError, TypeError):
+            errors.append("El tipo de dato ingresado en cantidad es incorrecto. Debe ser un entero")
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
         else:
+            if ticket:
+                ticket.quantity = quantity_input
+                ticket.type = type_input
+                messages.success(request, "Se modifico la compra con exito.")
+                ticket.save()
+            else:
+                event = get_object_or_404(Event, pk=event_id_post)
                 ticket = Ticket.objects.create(
-                quantity=quantity,
-                type=type_,
-                user=request.user,
-                event=event
-            )
-        ticket.save()
-        messages.success(request, "Compra de tickets exitosa.")
-        return redirect("ticket_list")
-    
-    return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+                    quantity = quantity_input,
+                    type=type_input,
+                    user=request.user,
+                    event=event
+                )
+                messages.success(request, "Se realizo la compra con exito.")
+            return redirect("ticket_list")
+    return render(request, "app/ticket_form.html", { "ticket": ticket, "event" : event})
 
 # View para ver el detalle de un ticket
 @login_required
@@ -336,6 +359,7 @@ def ticket_delete(request, id):
 
     if request.method=="POST" and ticket.can_be_deleted_by_user(request.user):
         ticket.delete()
+        messages.success(request, "Se elimino la compra con exito.")
         return redirect("ticket_list")
     return render(request, "app/ticket_delete.html", {"ticket": ticket})
     

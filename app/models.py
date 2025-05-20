@@ -150,22 +150,19 @@ class Rating(models.Model):
         return self.user == user or self.event.organizer == user
 
 class Ticket(models.Model):
-# Definimos un choice field para los tipos de tickets
     TICKET_TYPES = (
     ("GENERAL", "General"),
     ("VIP", "VIP"),
     )
-# Atributos
+
     buy_date = models.DateTimeField(auto_now_add=True)
     ticket_code = models.CharField(max_length=12, unique=True, editable=False)
     quantity = models.IntegerField()
     type = models.CharField(max_length=10, choices=TICKET_TYPES)
 
-# Relaciones muchos a uno
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tickets")
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tickets")
 
-# Metodos
     def save(self, *args,**kwargs):
         """Se asegura de que se haya generado el code antes de guardar"""
         if not self.ticket_code:
