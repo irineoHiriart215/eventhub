@@ -4,8 +4,9 @@ import time
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
+from datetime import timedelta
 
-from app.models import Event, User
+from app.models import Category, Event, Ticket, User, Venue
 
 
 class BaseEventTestCase(TestCase):
@@ -331,3 +332,41 @@ class EventDeleteViewTest(BaseEventTestCase):
 
         # Verificar que el evento sigue existiendo
         self.assertTrue(Event.objects.filter(pk=self.event1.id).exists())
+        
+        
+#simula la creación de un ticket a través de la view y verificar que no se permite cuando el evento está lleno       
+class TicketIntegrationTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        
+        # Crear categoría válida
+        self.category = Category.objects.create(name="Concierto")
+
+        # Crear lugar válido (Venue)
+        self.venue = Venue.objects.create(
+            name="Auditorio Central",
+            address="Calle Falsa 123",
+            capacity=100
+        )
+        self.event = Event.objects.create(
+            title="Evento lleno", 
+            general_capacity=2, 
+            vip_capacity=0, 
+            description="Evento para test", 
+            scheduled_at=timezone.now() + timedelta(days=1),
+            organizer=self.user,
+            category=self.category,  # Necesitas un objeto Category válido
+            venue=self.venue  # Necesitas un objeto Venue válido
+        )
+        # Crear tickets para llenar el evento
+        Ticket.objects.create(user=self.user, event=self.event, quantity=1, type='GENERAL')
+        Ticket.objects.create(user=self.user, event=self.event, quantity=1, type='GENERAL')
+
+    def test_cannot_purchase_when_capacity_reached(self):
+        self.client.login(username='testuser', password='12345')
+        url = reverse('ticket_form', args=[self.event.id])
+        response = self.client.post(url, {
+        'quantity': 1,
+        'type': 'GENERAL'
+        })
+        self.assertContains(response, "No hay mas cupo disponible", status_code=200)
