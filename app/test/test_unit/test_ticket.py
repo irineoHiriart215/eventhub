@@ -36,7 +36,7 @@ class TicketModelTest(TestCase):
         )
 
     def test_ticket_limit_logic(self):
-    # Crear 4 tickets de quantity=1 (total: 4)
+    # Crear 4 tickets de quantity=1
         for _ in range(4):
             Ticket.objects.create(user=self.user, event=self.event, quantity=1)
 
@@ -44,7 +44,7 @@ class TicketModelTest(TestCase):
         can_purchase = Ticket.can_purchase(self.user, self.event)
         self.assertFalse(can_purchase, "El usuario no debería poder comprar más de 4 tickets")
 
-        # Verificar que crear otro ticket lanza excepción (si vos después controlás eso manualmente)
+        # Verificar que crear otro ticket lanza excepción
         with self.assertRaises(Exception):
             if not Ticket.can_purchase(self.user, self.event):
                 raise Exception("Límite alcanzado")
