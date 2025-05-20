@@ -260,7 +260,7 @@ def ticket_form(request, event_id=None, id=None):
             event = get_object_or_404(Event, pk=event_id_post)
             
         try:
-            quantity = int(quantity)
+            quantity = int(quantity_input)
         except (TypeError, ValueError):
             messages.error(request, "La cantidad ingresada no es válida.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
@@ -270,16 +270,16 @@ def ticket_form(request, event_id=None, id=None):
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
         
         # Calcular cupo disponible según el tipo de entrada
-        if type_ == "VIP":
+        if type_input == "VIP":
             capacity = event.vip_capacity
-        elif type_ == "GENERAL":
+        elif type_input == "GENERAL":
             capacity = event.general_capacity
         else:
             messages.error(request, "Tipo de entrada no válido.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
 
         # Obtener tickets vendidos sin contar el que se está editando (si aplica)
-        total_tickets_sold = Ticket.objects.filter(event=event, type=type_)
+        total_tickets_sold = Ticket.objects.filter(event=event, type=type_input)
         if ticket:
             total_tickets_sold = total_tickets_sold.exclude(pk=ticket.pk)
 
@@ -291,7 +291,7 @@ def ticket_form(request, event_id=None, id=None):
         if available < 0:
             available = 0
 
-        print(f"Tipo: {type_}, Capacidad tipo: {capacity}, Vendidos tipo: {total_sold}, Disponible tipo: {available}, Pedido: {quantity}")
+        print(f"Tipo: {type_input}, Capacidad tipo: {capacity}, Vendidos tipo: {total_sold}, Disponible tipo: {available}, Pedido: {quantity}")
         print(f"Capacidad total: {event.total_capacity}, Vendidos total: {total_sold_all_types}, Disponible total: {total_available}")
 
     

@@ -322,10 +322,15 @@ class TicketEndToEndCapacityTest(TestCase):
     def setUp(self):
         # Cliente de prueba
         self.client = Client()
-
-        # Crear usuario y loguearlo
+       
+        # Cliente de prueba (usuario que comprará tickets)
         self.user = User.objects.create_user(username="testuser", password="password123")
-        self.client.login(username="testuser", password="password123")
+        login_successful = self.client.login(username="testuser", password="password123")
+        self.assertTrue(login_successful)
+        
+        # Usuario organizador
+        self.organizer = User.objects.create_user(username="organizer", password="password456")
+
 
         # Crear categoría y venue
         self.category = Category.objects.create(name="Concierto")
@@ -342,7 +347,7 @@ class TicketEndToEndCapacityTest(TestCase):
             title="Evento lleno",
             description="No hay mas cupo disponible",
             scheduled_at=datetime.now() + timedelta(days=1),
-            organizer=self.user,
+            organizer=self.organizer,
             category=self.category,
             venue=self.venue,
             general_capacity=2,
@@ -354,15 +359,31 @@ class TicketEndToEndCapacityTest(TestCase):
 
     def test_no_se_puede_comprar_si_no_hay_cupo(self):
         url = reverse("ticket_form", args=[self.event.id])
+        
+        # Hacer GET previo para verificar si el usuario está logueado y la vista responde con 200
+        response_get = self.client.get(url)
+        print("GET status code:", response_get.status_code)
+        self.assertEqual(response_get.status_code, 200, "GET inicial redirige en vez de mostrar el formulario")
 
-        response = self.client.post(url, {
+        # Confirmar que el usuario está logueado en la sesión
+        user_id = self.client.session.get('_auth_user_id')
+        print("Usuario en sesión (ID):", user_id)
+        self.assertIsNotNone(user_id, "El usuario no está logueado en la sesión")
+
+        try:
+        # Intentar hacer el POST
+            response_post = self.client.post(url, {
             "quantity": 1,
             "type": "GENERAL",
             "event_id": self.event.id
         })
-
-        # Asegurarse de que no redirige (porque debe mostrar error)
-        self.assertEqual(response.status_code, 200)
+        except Exception as e:
+            self.fail(f"Error inesperado al hacer POST: {e}")
+        
+            print("POST status code:", response_post.status_code)
+        # Aquí esperamos 200 porque la vista debería mostrar el formulario con error y no redirigir
+            self.assertEqual(response_post.status_code, 200, "POST redirige cuando debería mostrar error")
+        
 
         # El mensaje esperado debería estar en la respuesta
-        self.assertContains(response, "No hay mas cupo disponible", html=True)
+            self.assertContains(response, "No hay mas cupo disponible", html=True)
