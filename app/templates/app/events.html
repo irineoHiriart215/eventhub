@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load event_extras %}
 
 {% block title %}Eventos{% endblock %}
 
@@ -21,7 +22,7 @@
             <tr>
                 <th>Título</th>
                 <th>Descripción</th>
-                <!-- <th>Estado</th> -->
+                <th>Estado</th>
                 <th>Recinto</th>
                 <th>Fecha</th>
                 <th>Categoria</th>
@@ -33,7 +34,7 @@
                 <tr>
                     <td>{{ event.title }}</td>
                     <td>{{ event.description }}</td>
-                    <!-- <td>{{ event.state }}</td> -->
+                    <td><span class="badge {{ event|get_state_badge_class }}">{{ event.get_state_display }}</span></td>
                     <td>{{ event.venue.name }}</td>
                     <td>{{ event.scheduled_at|date:"d b Y, H:i" }}</td>
                     <td>{{ event.category.name }}</td>
