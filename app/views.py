@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
 
 from .models import Event, User, Ticket
 from .models import Comment, Category, Rating, Venue
