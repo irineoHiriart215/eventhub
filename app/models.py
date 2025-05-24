@@ -116,12 +116,21 @@ class Venue(models.Model):
         
 
 class Event(models.Model):
+    EVENT_STATE = (
+    ("AVAILABLE", "Activo"),
+    ("CANCELLED", "Cancelado"),
+    ("REPROGRAM", "Reprogramado"),
+    ("SOLD_OUT", "Agotado"),
+    ("FINISHED", "Finalizado"),
+    )
+    
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="events")
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
+    state = models.CharField(max_length=20, choices=EVENT_STATE, default="AVAILABLE")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -141,7 +150,7 @@ class Event(models.Model):
         return errors
 
     @classmethod
-    def new(cls, title, description, scheduled_at, organizer, category, venue):
+    def new(cls, title, description, scheduled_at, organizer, category, venue, state):
         errors = Event.validate(title, description, scheduled_at)
 
         if len(errors.keys()) > 0:
@@ -153,18 +162,20 @@ class Event(models.Model):
             scheduled_at=scheduled_at,
             organizer=organizer,
             category=category,
-            venue=venue
+            venue=venue,
+            state=state
         )
 
         return True, None
 
-    def update(self, title, description, scheduled_at, organizer, category, venue):
+    def update(self, title, description, scheduled_at, organizer, category, venue, state):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
         self.category = category or self.category
         self.venue = venue or self.venue
+        self.state = state or self.state
         self.save()
         
 class Comment(models.Model):

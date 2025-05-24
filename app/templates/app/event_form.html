@@ -86,6 +86,16 @@
                                 </div>
                             </div>
                             <div>
+                                <label for="state" class="form-label">Estado</label>
+                                <select name="state" id="state">
+                                    <option value="AVAILABLE" {% if event.state == "AVAILABLE" %} selected {% endif %}>Activo</option>
+                                    <option value="CANCELLED" {% if event.state == "CANCELLED" %} selected {% endif %}>Cancelado</option>
+                                    <option value="REPROGRAM" {% if event.state == "REPROGRAM" %} selected {% endif %}>Reprogramado</option>
+                                    <option value="SOLD_OUT" {% if event.state == "SOLD_OUT" %} selected {% endif %}>Agotado</option>
+                                    <option value="FINISHED" {% if event.state == "FINISHED" %} selected {% endif %}>Finalizado</option>
+                                </select>
+                            </div>
+                            <div>
                                 <button type="submit" class="btn btn-primary">
                                     {% if event.id %}
                                         Editar evento

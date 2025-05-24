@@ -110,6 +110,7 @@ def event_form(request, id = None):
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
+        state = request.POST.get("state")
 
         [year, month, day] = date.split("-")
         [hour, minutes] = time.split(":")
@@ -125,10 +126,10 @@ def event_form(request, id = None):
         venue= get_object_or_404(Venue, id=venue_id)
         
         if id is None:
-            Event.new(title, description, scheduled_at, request.user, category, venue)
+            Event.new(title, description, scheduled_at, request.user, category, venue, state)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user, category, venue)
+            event.update(title, description, scheduled_at, request.user, category, venue, state)
 
         return redirect("events")
 
