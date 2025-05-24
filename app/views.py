@@ -4,8 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
-from django.db.models import Sum
-
+from django.core.exceptions import ValidationError
 
 from .models import Event, User, Ticket
 from .models import Comment, Category, Rating, Venue
@@ -595,14 +594,17 @@ def create_venue(request):
             for error in errors: 
                 messages.error(request, error)
         else:
-            venue = Venue.objects.create(
-                name = name,
-                address = address,
-                city = city,
-                capacity = capacity,
-                contact = contact)
-            messages.success(request, "Recinto creado")
-            return redirect('venue')
+            try:
+                venue = Venue(name=name,address=address,city=city,capacity=capacity,contact=contact,)
+                venue.full_clean()
+                venue.save()
+                messages.success(request, "Recinto creado")
+                return redirect('venue')
+            except ValidationError as e:
+                for field, messages_list in e.message_dict.items():
+                    for message in messages_list:
+                        messages.error(request, f"{field}: {message}")
+
 
     return render(
         request, 
@@ -629,8 +631,16 @@ def edit_venue(request, venue_id):
         venue.city = request.POST.get("city")
         venue.capacity = request.POST.get("capacity")
         venue.contact = request.POST.get("contact")
-        venue.save()
-        return redirect ('venue')
+        
+        try:
+            venue.full_clean()
+            venue.save()
+            messages.success(request, "Recinto actualizado")
+            return redirect('venue')
+        except ValidationError as e:
+            for field, messages_list in e.message_dict.items():
+                for message in messages_list:
+                    messages.error(request, f"{field}: {message}")
         
     return render(request, "app/editVenue.html" ,  {"venue": venue, "user_is_organizer": request.user.is_organizer},)
     

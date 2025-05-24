@@ -2,6 +2,7 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.core.exceptions import ValidationError
 
 
 class User(AbstractUser):
@@ -51,7 +52,31 @@ class Venue(models.Model):
 
     def user_is_organizer(self, user):
         return user.is_organizer
+    
+    def clean(self):
+        #validaciones: campos vacios
+        if not self.name.strip():
+            raise ValidationError({'name':'El nombre no puede estar vacio'})
+        
+        if not self.city.strip():
+            raise ValidationError({'city':'La ciudad no puede estar vacia'})
+        
+        if not self.address.strip():
+            raise ValidationError({'adress':'La direccion no puede estar vacia'})
+        
+        if not self.contact.strip():
+            raise ValidationError({'contact':'El contacto no puede estar vacio'})
+        
+        if self.capacity is None:
+            raise ValidationError({'capacity':'La capacidad no puede estar vacia'})
 
+        #validacion: capacidad no puede ser negativa o cero
+        if self.capacity <= 0  :
+            raise ValidationError({'capacity':'La capacidad debe ser un numero positivo'})
+        
+        #Validacion: la ciudad 
+        
+        
 
 class Event(models.Model):
     title = models.CharField(max_length=200)
