@@ -10,6 +10,16 @@
 
             <div class="card">
                 <div class="card-body">
+                    <style>
+                        .error {
+                          color: red;
+                          font-weight: bold;
+                          margin-top: 5px;
+                        }
+                      </style>
+                    {% if errors.name %}
+                    <p style="color: red, font-weight: bold, margin-top: 5px;" class="error">¡Error: {{ errors.name }}!</p>
+                    {% endif %}
                     <form action="{% url 'create_categoria' %}" method="POST">
                         {% csrf_token %}
                         <div class="vstack gap-3">
