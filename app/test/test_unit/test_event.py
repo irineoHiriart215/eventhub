@@ -2,8 +2,11 @@ import datetime
 
 from django.test import TestCase
 from django.utils import timezone
+from django.urls import reverse
+from datetime import timedelta  # <--- esta línea nueva
 
-from app.models import Event, User
+
+from app.models import Event, User, Category, Venue
 
 
 class EventModelTest(TestCase):
@@ -140,3 +143,53 @@ class EventModelTest(TestCase):
         self.assertEqual(updated_event.title, original_title)
         self.assertEqual(updated_event.description, new_description)
         self.assertEqual(updated_event.scheduled_at, original_scheduled_at)
+
+
+
+class EventViewTest(TestCase): 
+    def setUp(self):
+    # Crear o recuperar una categoría para asignar a los eventos
+        self.category = Category.objects.create(name="Categoría de prueba")  # o como sea el nombre del campo
+
+        self.organizer = User.objects.create_user(username="organizer", password="password")
+
+         # Crear un usuario
+        self.user = User.objects.create_user(username="testuser", password="password123")
+
+        # Crear un venue
+        self.venue = Venue.objects.create(name="Teatro Colón", address="Calle falsa 123", capacity=100)
+    
+        self.past_event = Event.objects.create(
+            title="Evento Pasado",
+            description="Ya fue",
+            scheduled_at=timezone.now() - timedelta(days=1),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue
+        )
+
+        self.future_event = Event.objects.create(
+            title="Evento Futuro",
+            scheduled_at=timezone.now() + timedelta(days=1),
+            organizer=self.organizer,
+            category=self.category,
+            venue=self.venue  
+
+        )
+
+    def test_events_view_returns_only_future_events(self):  
+        self.client.login(username="testuser", password="password123")
+
+        url = reverse("events")  
+        response = self.client.get(url) 
+
+        self.assertEqual(response.status_code, 200)  
+        events = response.context["events"]  
+
+        # Debe incluir solo el evento futuro
+        self.assertEqual(len(events), 1)  
+        self.assertEqual(events[0].title, "Evento Futuro") 
+
+        # Confirmar que no está el evento pasado
+        for event in events:  
+            self.assertTrue(event.scheduled_at > timezone.now()) 
