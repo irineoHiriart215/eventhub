@@ -38,6 +38,43 @@ class Category(models.Model):
     
     def user_is_organizer(self, user):
         return user.is_organizer
+    
+    @classmethod
+    def validate(cls, name, description, is_active):
+        errors = {}
+        if name == "":
+            errors["name"] = "Debe ingresar un nombre"
+        elif Category.objects.filter(name=name).exists():
+            errors["name"] = "Categoria existente"
+        if description == "":
+            errors["description"] = "Debe ingresar una descripcion"
+        if is_active == "":
+            errors["is_active"] = "Debe ingresar su estado"
+        elif not isinstance(is_active, bool):
+            errors["is_active"] = "El estado debe ser True or False"
+        return errors
+    
+    @classmethod
+    def new(cls, name, description, is_active):
+        errors = Category.validate(name, description, is_active)
+
+        if len(errors.keys()) > 0:
+            return False, errors
+
+        Category.objects.create(
+            name=name,
+            description=description,
+            is_active=is_active
+        )
+
+        return True, None
+    
+    def update(self, name, description, is_active):
+        self.name = name or self.name
+        self.description = description or self.description
+        self.is_active = is_active or self.is_active
+        self.save()
+
 
 class Venue(models.Model):  
     name  = models.CharField(max_length=200)
