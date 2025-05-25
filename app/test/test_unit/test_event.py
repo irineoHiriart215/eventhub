@@ -119,12 +119,28 @@ class EventModelTest(TestCase):
         new_title = "Título actualizado"
         new_description = "Descripción actualizada"
         new_scheduled_at = timezone.now() + datetime.timedelta(days=3)
-
+        new_venue = Venue.objects.create(
+            name = "Estadio de ejemplo 2",
+            city = "Ciudad de ejemplo 2",
+            address = "Calle 1234",
+            capacity = "101",
+            contact = "Contactos del estadio 2"
+        )
+        new_category = Category.objects.create(
+            name = "Categoria 2",
+            description = "Descripcion 2",
+            is_active = True
+        )
+        new_state = "SOLD_OUT"
+        
         event = Event.objects.create(
             title="Evento de prueba",
             description="Descripción del evento de prueba",
             scheduled_at=timezone.now() + datetime.timedelta(days=1),
             organizer=self.organizer,
+            venue=self.venue,
+            category=self.category,
+            state="AVAILABLE",
         )
 
         event.update(
@@ -132,6 +148,9 @@ class EventModelTest(TestCase):
             description=new_description,
             scheduled_at=new_scheduled_at,
             organizer=self.organizer,
+            venue=new_venue,
+            category=new_category,
+            state=new_state,
         )
 
         # Recargar el evento desde la base de datos
@@ -140,6 +159,9 @@ class EventModelTest(TestCase):
         self.assertEqual(updated_event.title, new_title)
         self.assertEqual(updated_event.description, new_description)
         self.assertEqual(updated_event.scheduled_at.time(), new_scheduled_at.time())
+        self.assertEqual(updated_event.venue, new_venue)
+        self.assertEqual(updated_event.category, new_category)
+        self.assertEqual(updated_event.state, new_state)
 
     def test_event_update_partial(self):
         """Test que verifica la actualización parcial de eventos"""
@@ -148,17 +170,26 @@ class EventModelTest(TestCase):
             description="Descripción del evento de prueba",
             scheduled_at=timezone.now() + datetime.timedelta(days=1),
             organizer=self.organizer,
+            venue=self.venue,
+            category=self.category,
+            state="AVAILABLE",
         )
 
         original_title = event.title
         original_scheduled_at = event.scheduled_at
         new_description = "Solo la descripción ha cambiado"
+        original_venue = event.venue
+        original_category = event.category
+        original_state = event.state
 
         event.update(
             title=None,  # No cambiar
             description=new_description,
             scheduled_at=None,  # No cambiar
             organizer=None,  # No cambiar
+            venue=self.venue,  # No cambiar
+            category=self.category,  # No cambiar
+            state="AVAILABLE",  # No cambiar
         )
 
         # Recargar el evento desde la base de datos
@@ -168,3 +199,7 @@ class EventModelTest(TestCase):
         self.assertEqual(updated_event.title, original_title)
         self.assertEqual(updated_event.description, new_description)
         self.assertEqual(updated_event.scheduled_at, original_scheduled_at)
+        self.assertEqual(updated_event.venue, original_venue)
+        self.assertEqual(updated_event.category, original_category)
+        self.assertEqual(updated_event.state, original_state)
+        
