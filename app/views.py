@@ -74,7 +74,10 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    cuenta_regresiva = event.get_cuenta_regresiva()if not request.user.is_organizer else None
+    cuenta_regresiva = None
+    now = timezone.now()
+    if event.scheduled_at > now and not request.user.is_organizer:
+        cuenta_regresiva = event.get_cuenta_regresiva()
     return render(
             request, "app/event_detail.html",
             {"event": event, "cuenta_regresiva": cuenta_regresiva}
