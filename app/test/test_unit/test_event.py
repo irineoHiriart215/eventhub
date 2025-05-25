@@ -3,7 +3,7 @@ import datetime
 from django.test import TestCase
 from django.utils import timezone
 
-from app.models import Event, User
+from app.models import Event, User, Venue, Category
 
 
 class EventModelTest(TestCase):
@@ -14,6 +14,18 @@ class EventModelTest(TestCase):
             password="password123",
             is_organizer=True,
         )
+        self.venue = Venue.objects.create(
+            name = "Estadio de ejemplo",
+            city = "Ciudad de ejemplo",
+            address = "Calle 123",
+            capacity = "100",
+            contact = "Contactos del estadio"
+        )
+        self.category = Category.objects.create(
+            name = "Categoria 1",
+            description = "Descripcion",
+            is_active = True
+        )
 
     def test_event_creation(self):
         event = Event.objects.create(
@@ -21,11 +33,18 @@ class EventModelTest(TestCase):
             description="Descripción del evento de prueba",
             scheduled_at=timezone.now() + datetime.timedelta(days=1),
             organizer=self.organizer,
+            venue=self.venue,
+            category=self.category,
+            state="AVAILABLE"
         )
+        
         """Test que verifica la creación correcta de eventos"""
         self.assertEqual(event.title, "Evento de prueba")
         self.assertEqual(event.description, "Descripción del evento de prueba")
         self.assertEqual(event.organizer, self.organizer)
+        self.assertEqual(event.venue, self.venue)
+        self.assertEqual(event.category, self.category)
+        self.assertEqual(event.state, "AVAILABLE")
         self.assertIsNotNone(event.created_at)
         self.assertIsNotNone(event.updated_at)
 
@@ -57,6 +76,9 @@ class EventModelTest(TestCase):
             description="Descripción del nuevo evento",
             scheduled_at=scheduled_at,
             organizer=self.organizer,
+            venue=self.venue,
+            category=self.category,
+            state="AVAILABLE",
         )
 
         self.assertTrue(success)
@@ -66,6 +88,9 @@ class EventModelTest(TestCase):
         new_event = Event.objects.get(title="Nuevo evento")
         self.assertEqual(new_event.description, "Descripción del nuevo evento")
         self.assertEqual(new_event.organizer, self.organizer)
+        self.assertEqual(new_event.venue, self.venue)
+        self.assertEqual(new_event.category, self.category)
+        self.assertEqual(new_event.state, "AVAILABLE")
 
     def test_event_new_with_invalid_data(self):
         """Test que verifica que no se crean eventos con datos inválidos"""
@@ -78,6 +103,9 @@ class EventModelTest(TestCase):
             description="Descripción del evento",
             scheduled_at=scheduled_at,
             organizer=self.organizer,
+            venue=self.venue,
+            category=self.category,
+            state="AVAILABLE",
         )
 
         self.assertFalse(success)
