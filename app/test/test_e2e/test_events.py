@@ -4,9 +4,19 @@ import re
 from django.utils import timezone
 from playwright.sync_api import expect
 
-from app.models import Event, User
+from app.models import Event, User, Category, Venue
 
 from app.test.test_e2e.base import BaseE2ETest
+
+
+from django.test import LiveServerTestCase
+from django.contrib.auth.models import User
+from django.urls import reverse
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
+
 
 
 class EventBaseTest(BaseE2ETest):
@@ -311,3 +321,52 @@ class EventCRUDTest(EventBaseTest):
 
         # Verificar que el evento eliminado ya no aparece en la tabla
         expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
+
+
+
+
+
+class FutureEventsEndToEndTest(LiveServerTestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(username='organizer', password='pass123') 
+        organizer_group, created = Group.objects.get_or_create(name='Organizers')
+        self.user.groups.add(organizer_group)
+        self.user.save()
+
+        self.category = Category.objects.create(name='Conciertos')
+        self.venue = Venue.objects.create(
+            name='Estadio Central',
+            city='Ciudad',
+            address='Calle 123',
+            capacity=1000,
+            contact='contacto@venue.com'
+        )
+
+        self.past_event = Event.objects.create(
+            title='Evento Pasado',
+            description='Evento que ya pasó',
+            scheduled_at=timezone.now() - timedelta(days=3),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue
+        )
+
+        self.future_event = Event.objects.create(
+            title='Evento Futuro',
+            description='Evento que será',
+            scheduled_at=timezone.now() + timedelta(days=3),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue
+        )
+
+    def test_authenticated_user_sees_only_future_events(self):
+        self.client.login(username='organizer', password='pass123')
+
+        url = reverse('events')  
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.future_event.title)
+        self.assertNotContains(response, self.past_event.title)
