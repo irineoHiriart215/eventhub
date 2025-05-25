@@ -240,6 +240,11 @@ def ticket_form(request, event_id=None, id=None):
     elif event_id:
         event = get_object_or_404(Event, pk=event_id)
 
+    if not event.can_be_bought():
+        messages.error(request, f"No se puede realizar la compra porque el evento esta {event.get_state_display()}.")
+        return redirect("events")
+
+
     if event.organizer == request.user:
         messages.error(request, "El organizador no tiene permiso para comprar tickets de su propio evento.")
         return redirect("events")

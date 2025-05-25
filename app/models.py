@@ -136,6 +136,12 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+    
+    def can_be_bought(self):
+        if ((self.state == "CANCELLED") or (self.state == "SOLD_OUT") or (self.state == "FINISHED")):
+            return False 
+        else:
+            return True
 
     @classmethod
     def validate(cls, title, description, scheduled_at):
