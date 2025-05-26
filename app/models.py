@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -177,7 +178,7 @@ class Event(models.Model):
         )
 
         return True, None
-
+    
     def update(self, title, description, scheduled_at, organizer, category, venue, state):
         self.title = title or self.title
         self.description = description or self.description
@@ -187,6 +188,17 @@ class Event(models.Model):
         self.venue = venue or self.venue
         self.state = state or self.state
         self.save()
+
+    def get_cuenta_regresiva(self):
+        now = timezone.now()
+        diff = self.scheduled_at - now
+        if diff.total_seconds() <= 0:
+            return None
+        days = diff.days
+        hours, remainder = divmod(diff.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+
+        return f"{days} dias, {hours} horas, {minutes} minutos"
         
 class Comment(models.Model):
     title = models.CharField(max_length=100, default="Sin título")

@@ -5,7 +5,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from app.models import Event, User
+from app.models import Event, User, Category, Venue
 
 
 class BaseEventTestCase(TestCase):
@@ -28,12 +28,17 @@ class BaseEventTestCase(TestCase):
             is_organizer=False,
         )
 
+        self.category = Category.objects.create(name='Musica', description='Descripcion ejemplo')
+        self.venue = Venue.objects.create(name='Estadio Único', city='La Plata', address='Av. 32', capacity=1000, contact='example')
+
         # Crear algunos eventos de prueba
         self.event1 = Event.objects.create(
             title="Evento 1",
             description="Descripción del evento 1",
             scheduled_at=timezone.now() + datetime.timedelta(days=1),
             organizer=self.organizer,
+            category=self.category,
+            venue=self.venue
         )
 
         self.event2 = Event.objects.create(
@@ -41,6 +46,8 @@ class BaseEventTestCase(TestCase):
             description="Descripción del evento 2",
             scheduled_at=timezone.now() + datetime.timedelta(days=2),
             organizer=self.organizer,
+            category=self.category,
+            venue=self.venue
         )
 
         # Cliente para hacer peticiones
@@ -129,8 +136,35 @@ class EventDetailViewTest(BaseEventTestCase):
 
         # Verificar respuesta
         self.assertEqual(response.status_code, 404)
+    
+    def test_event_detail_view_cuenta_regresiva_regular_user_evento_futuro(self):
+        self.client.login(username="regular", password="password123")
+        response = self.client.get(reverse("event_detail", args=[self.event1.id]))
+        self.assertEqual(response.status_code, 200)
+        cuenta_regresiva = response.context["cuenta_regresiva"]
+        self.assertIsNotNone(cuenta_regresiva)
+        self.assertRegex(cuenta_regresiva, r'\d+ dias, \d+ horas, \d+ minutos')
 
+    def test_event_detail_view_cuenta_regresiva_no_organizador(self):
+        self.client.login(username="organizador", password="password123")
+        response = self.client.get(reverse("event_detail", args=[self.event1.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['cuenta_regresiva'])
 
+    def test_event_detail_view_cuenta_regresiva_evento_pasado(self):
+        evento_pasado = Event.objects.create(
+            title="Evento pasado",
+            description="Evento que ya ha ocurrido",
+            scheduled_at=timezone.now() - datetime.timedelta(days=1),
+            organizer=self.organizer,
+            category=self.category,
+            venue=self.venue
+        )
+        self.client.login(username="regular", password="password123")
+        response = self.client.get(reverse("event_detail", args=[evento_pasado.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['cuenta_regresiva'], "El evento ya ha ocurrido.")
+        
 class EventFormViewTest(BaseEventTestCase):
     """Tests para la vista del formulario de eventos"""
 
@@ -197,10 +231,12 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "description": "Descripción del nuevo evento",
             "date": "2025-05-01",
             "time": "14:30",
+            "categoria": str(self.category.id),
+            "venue": str(self.venue.id)
         }
 
         # Hacer petición POST a la vista event_form
-        response = self.client.post(reverse("event_form"), event_data)
+        response = self.client.post(reverse("event_form"), data=event_data)
 
         # Verificar que redirecciona a events
         self.assertEqual(response.status_code, 302)
@@ -228,6 +264,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "description": "Nueva descripción actualizada",
             "date": "2025-06-15",
             "time": "16:45",
+            "categoria": str(self.category.id),
+            "venue": str(self.venue.id)
         }
 
         # Hacer petición POST para editar el evento
@@ -295,7 +333,8 @@ class EventDeleteViewTest(BaseEventTestCase):
         response = self.client.get(reverse("event_delete", args=[self.event1.id]))
 
         # Verificar que redirecciona a la página de eventos
-        self.assertRedirects(response, reverse("events"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "app/event_delete.html")
 
         # Verificar que el evento sigue existiendo
         self.assertTrue(Event.objects.filter(pk=self.event1.id).exists())
