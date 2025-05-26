@@ -1,6 +1,5 @@
 import re
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from django.test import TestCase, Client
 
 from django.utils import timezone
@@ -8,6 +7,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.contrib.auth.models import User
 from django.urls import reverse 
 from app.models import User
+from playwright.sync_api import expect
 
 from app.models import Category, Event, Ticket, Venue
 from app.test.test_e2e.base import BaseE2ETest
@@ -37,7 +37,7 @@ class EventBaseTest(BaseE2ETest):
 
         # Crear eventos de prueba
         # Evento 1
-        event_date1 = timezone.make_aware(datetime.datetime(2025, 2, 10, 10, 10))
+        event_date1 = timezone.make_aware(datetime(2025, 2, 10, 10, 10))
         self.event1 = Event.objects.create(
             title="Evento de prueba 1",
             description="Descripción del evento 1",
@@ -46,7 +46,7 @@ class EventBaseTest(BaseE2ETest):
         )
 
         # Evento 2
-        event_date2 = timezone.make_aware(datetime.datetime(2025, 3, 15, 14, 30))
+        event_date2 = timezone.make_aware(datetime(2025, 3, 15, 14, 30))
         self.event2 = Event.objects.create(
             title="Evento de prueba 2",
             description="Descripción del evento 2",
