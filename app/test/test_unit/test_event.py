@@ -27,8 +27,6 @@ class EventModelTest(TestCase):
             venue=self.venue,
             category=self.category,
             state="AVAILABLE"
-            category=self.category,
-            venue=self.venue
         )
         
         """Test que verifica la creación correcta de eventos"""
@@ -72,8 +70,6 @@ class EventModelTest(TestCase):
             venue=self.venue,
             category=self.category,
             state="AVAILABLE",
-            category=self.category,
-            venue=self.venue
         )
 
         self.assertTrue(success)
@@ -101,8 +97,6 @@ class EventModelTest(TestCase):
             venue=self.venue,
             category=self.category,
             state="AVAILABLE",
-            category=self.category,
-            venue=self.venue
         )
 
         self.assertFalse(success)
@@ -125,8 +119,6 @@ class EventModelTest(TestCase):
             venue=self.venue,
             category=self.category,
             state="AVAILABLE",
-            category=self.category,
-            venue=self.venue
         )
 
         event.update(
@@ -135,7 +127,8 @@ class EventModelTest(TestCase):
             scheduled_at=new_scheduled_at,
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state = "AVAILABLE"
         )
 
         # Recargar el evento desde la base de datos
@@ -155,8 +148,6 @@ class EventModelTest(TestCase):
             venue=self.venue,
             category=self.category,
             state="AVAILABLE",
-            category=self.category,
-            venue=self.venue
         )
 
         original_title = event.title
@@ -169,7 +160,8 @@ class EventModelTest(TestCase):
             scheduled_at=None,  # No cambiar
             organizer=None, # No cambiar
             category=None,  # No cambiar
-            venue=None  # No cambiar
+            venue=None,  # No cambiar
+            state=None  # No cambiar
         )
 
         # Recargar el evento desde la base de datos
@@ -187,7 +179,8 @@ class EventModelTest(TestCase):
             scheduled_at=timezone.now() + datetime.timedelta(days=2, hours= 3, minutes=15),
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state = "AVAILABLE"
         )
         cuenta_regresiva = event.get_cuenta_regresiva()
         self.assertIn("2 dias", cuenta_regresiva) 
@@ -200,7 +193,8 @@ class EventModelTest(TestCase):
             scheduled_at=timezone.now() - datetime.timedelta(days=1),
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state = "AVAILABLE"
         )
         self.assertIsNone(event.get_cuenta_regresiva())
 
@@ -213,7 +207,8 @@ class EventModelTest(TestCase):
                 scheduled_at=now + datetime.timedelta(minutes=45),
                 organizer=self.organizer,
                 category=self.category,
-                venue=self.venue
+                venue=self.venue,
+                state = "AVAILABLE"
             )
             cuenta_regresiva=event.get_cuenta_regresiva()
             self.assertIn("0 dias", cuenta_regresiva)
