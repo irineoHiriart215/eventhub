@@ -335,3 +335,28 @@ class EventCRUDTest(EventBaseTest):
 
         # Verificar que el evento eliminado ya no aparece en la tabla
         expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
+
+class EventDetailViewTest(EventBaseTest):
+    """Test que verifica la visualización de la página de detalle de eventos para un usuario regular"""
+    def test_event_detail_page_regular_user(self):
+
+        event_date3 = timezone.make_aware(datetime.datetime(2025, 7, 15, 13, 10))
+        self.event3 = Event.objects.create(
+            title="Evento de prueba 3",
+            description="Evento Futuro",
+            scheduled_at=event_date3,
+            organizer=self.organizer,
+            category=self.category,
+            venue=self.venue
+        )
+        self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/{self.event3.id}/")
+        cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
+        expect(cuenta_regresiva).to_have_text(re.compile(r"\d+ dias, \d+ horas, \d+ minutos"))
+
+    def test_event_detail_page_regular_evento_pasado_cuenta_regresiva(self):
+        self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/{self.event1.id}/")
+        cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
+        expect(cuenta_regresiva).to_be_visible()
+        expect(cuenta_regresiva).to_have_text("El evento ya ha ocurrido.")
