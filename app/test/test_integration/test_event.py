@@ -163,8 +163,8 @@ class EventDetailViewTest(BaseEventTestCase):
         self.client.login(username="regular", password="password123")
         response = self.client.get(reverse("event_detail", args=[evento_pasado.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.context['cuenta_regresiva'])
-
+        self.assertEqual(response.context['cuenta_regresiva'], "El evento ya ha ocurrido.")
+        
 class EventFormViewTest(BaseEventTestCase):
     """Tests para la vista del formulario de eventos"""
 
