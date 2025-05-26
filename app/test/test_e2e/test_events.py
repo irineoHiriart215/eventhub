@@ -322,6 +322,9 @@ class TicketEndToEndCapacityTest(TestCase):
     def setUp(self):
         # Cliente de prueba
         self.client = Client()
+        
+         # Usuario organizador (NO se loguea con este)
+        self.organizer = User.objects.create_user(username="organizer", password="pass123")
 
         # Crear usuario y loguearlo
         self.user = User.objects.create_user(username="testuser", password="password123")
@@ -359,7 +362,7 @@ class TicketEndToEndCapacityTest(TestCase):
             "quantity": 1,
             "type": "GENERAL",
             "event_id": self.event.id
-        })
+        }, follow=True)
 
         # Asegurarse de que no redirige (porque debe mostrar error)
         self.assertEqual(response.status_code, 200)
