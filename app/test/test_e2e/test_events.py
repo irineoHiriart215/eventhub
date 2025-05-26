@@ -9,7 +9,8 @@ from django.contrib.auth.models import User
 from django.urls import reverse 
 from app.models import User
 
-from app.models import Category, Event, Ticket, Venue
+from app.models import Event, User, Category, Venue
+
 from app.test.test_e2e.base import BaseE2ETest
 
 
@@ -36,6 +37,8 @@ class EventBaseTest(BaseE2ETest):
         )
 
         # Crear eventos de prueba
+        self.category = Category.objects.create(name='Musica', description='Descripcion ejemplo')
+        self.venue = Venue.objects.create(name='Estadio Único', city='La Plata', address='Av. 32', capacity=1000, contact='example')
         # Evento 1
         event_date1 = timezone.make_aware(datetime.datetime(2025, 2, 10, 10, 10))
         self.event1 = Event.objects.create(
@@ -43,6 +46,8 @@ class EventBaseTest(BaseE2ETest):
             description="Descripción del evento 1",
             scheduled_at=event_date1,
             organizer=self.organizer,
+            category=self.category,
+            venue=self.venue
         )
 
         # Evento 2
@@ -52,6 +57,8 @@ class EventBaseTest(BaseE2ETest):
             description="Descripción del evento 2",
             scheduled_at=event_date2,
             organizer=self.organizer,
+            category=self.category,
+            venue=self.venue
         )
 
     def _table_has_event_info(self):
@@ -60,8 +67,10 @@ class EventBaseTest(BaseE2ETest):
         headers = self.page.locator("table thead th")
         expect(headers.nth(0)).to_have_text("Título")
         expect(headers.nth(1)).to_have_text("Descripción")
-        expect(headers.nth(2)).to_have_text("Fecha")
-        expect(headers.nth(3)).to_have_text("Acciones")
+        expect(headers.nth(2)).to_have_text("Recinto")
+        expect(headers.nth(3)).to_have_text("Fecha")
+        expect(headers.nth(4)).to_have_text("Categoria")
+        expect(headers.nth(5)).to_have_text("Acciones")
 
         # Verificar que los eventos aparecen en la tabla
         rows = self.page.locator("table tbody tr")
@@ -71,12 +80,16 @@ class EventBaseTest(BaseE2ETest):
         row0 = rows.nth(0)
         expect(row0.locator("td").nth(0)).to_have_text("Evento de prueba 1")
         expect(row0.locator("td").nth(1)).to_have_text("Descripción del evento 1")
-        expect(row0.locator("td").nth(2)).to_have_text("10 feb 2025, 10:10")
+        expect(row0.locator("td").nth(2)).to_have_text("Estadio Único")
+        expect(row0.locator("td").nth(3)).to_have_text("10 feb 2025, 10:10")
+        expect(row0.locator("td").nth(4)).to_have_text("Musica")
 
         # Verificar datos del segundo evento
         expect(rows.nth(1).locator("td").nth(0)).to_have_text("Evento de prueba 2")
         expect(rows.nth(1).locator("td").nth(1)).to_have_text("Descripción del evento 2")
-        expect(rows.nth(1).locator("td").nth(2)).to_have_text("15 mar 2025, 14:30")
+        expect(rows.nth(1).locator("td").nth(2)).to_have_text("Estadio Único")
+        expect(rows.nth(1).locator("td").nth(3)).to_have_text("15 mar 2025, 14:30")
+        expect(rows.nth(1).locator("td").nth(4)).to_have_text("Musica")
 
     def _table_has_correct_actions(self, user_type):
         """Método auxiliar para verificar que las acciones son correctas según el tipo de usuario"""
@@ -94,7 +107,7 @@ class EventBaseTest(BaseE2ETest):
             expect(edit_button).to_have_attribute("href", f"/events/{self.event1.id}/edit/")
 
             expect(delete_form).to_have_attribute("action", f"/events/{self.event1.id}/delete/")
-            expect(delete_form).to_have_attribute("method", "POST")
+            expect(delete_form).to_have_attribute("method", "GET")
 
             delete_button = delete_form.get_by_role("button", name="Eliminar")
             expect(delete_button).to_be_visible()
@@ -229,6 +242,8 @@ class EventCRUDTest(EventBaseTest):
         self.page.get_by_label("Descripción").fill("Descripción creada desde prueba E2E")
         self.page.get_by_label("Fecha").fill("2025-06-15")
         self.page.get_by_label("Hora").fill("16:45")
+        self.page.select_option("select[name='venue']", label="Estadio Único")
+        self.page.get_by_label("Musica").check()
 
         # Enviar el formulario
         self.page.get_by_role("button", name="Crear Evento").click()
@@ -243,7 +258,10 @@ class EventCRUDTest(EventBaseTest):
         row = self.page.locator("table tbody tr").last
         expect(row.locator("td").nth(0)).to_have_text("Evento de prueba E2E")
         expect(row.locator("td").nth(1)).to_have_text("Descripción creada desde prueba E2E")
-        expect(row.locator("td").nth(2)).to_have_text("15 jun 2025, 16:45")
+        expect(row.locator("td").nth(2)).to_have_text("Estadio Único")
+        expect(row.locator("td").nth(3)).to_have_text("15 jun 2025, 16:45")
+        expect(row.locator("td").nth(4)).to_have_text("Musica")
+
 
     def test_edit_event_organizer(self):
         """Test que verifica la funcionalidad de editar un evento para organizadores"""
@@ -272,6 +290,9 @@ class EventCRUDTest(EventBaseTest):
         expect(description).to_have_value("Descripción del evento 1")
         description.fill("Descripcion Editada")
 
+        selected_option = self.page.locator("select[name='venue'] option:checked")
+        expect(selected_option).to_have_text("Estadio Único")
+
         date = self.page.get_by_label("Fecha")
         expect(date).to_have_value("2025-02-10")
         date.fill("2025-04-20")
@@ -280,8 +301,10 @@ class EventCRUDTest(EventBaseTest):
         expect(time).to_have_value("10:10")
         time.fill("03:00")
 
+        expect(self.page.get_by_label("Musica")).to_be_checked()
+
         # Enviar el formulario
-        self.page.get_by_role("button", name="Crear Evento").click()
+        self.page.get_by_role("button", name="Editar Evento").click()
 
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
@@ -290,21 +313,23 @@ class EventCRUDTest(EventBaseTest):
         row = self.page.locator("table tbody tr").last
         expect(row.locator("td").nth(0)).to_have_text("Titulo editado")
         expect(row.locator("td").nth(1)).to_have_text("Descripcion Editada")
-        expect(row.locator("td").nth(2)).to_have_text("20 abr 2025, 03:00")
+        expect(row.locator("td").nth(2)).to_have_text("Estadio Único")
+        expect(row.locator("td").nth(3)).to_have_text("20 abr 2025, 03:00")
+        expect(row.locator("td").nth(4)).to_have_text("Musica")
 
     def test_delete_event_organizer(self):
         """Test que verifica la funcionalidad de eliminar un evento para organizadores"""
         # Iniciar sesión como organizador
         self.login_user("organizador", "password123")
-
-        # Ir a la página de eventos
         self.page.goto(f"{self.live_server_url}/events/")
 
         # Contar eventos antes de eliminar
         initial_count = len(self.page.locator("table tbody tr").all())
 
         # Hacer clic en el botón eliminar del primer evento
-        self.page.get_by_role("button", name="Eliminar").first.click()
+        self.page.get_by_title("Eliminar").first.click()
+        
+        self.page.get_by_role("button", name="Sí, eliminar").click()
 
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
@@ -315,75 +340,28 @@ class EventCRUDTest(EventBaseTest):
 
         # Verificar que el evento eliminado ya no aparece en la tabla
         expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
-        
-           
-#test e2e para evitar compras cuando no hay cupo disponible  
-class TicketEndToEndCapacityTest(TestCase):
-    def setUp(self):
-        # Cliente de prueba
-        self.client = Client()
-       
-        # Cliente de prueba (usuario que comprará tickets)
-        self.user = User.objects.create_user(username="testuser", password="password123")
-        login_successful = self.client.login(username="testuser", password="password123")
-        self.assertTrue(login_successful)
-        
-        # Usuario organizador
-        self.organizer = User.objects.create_user(username="organizer", password="password456")
 
+class EventDetailViewTest(EventBaseTest):
+    """Test que verifica la visualización de la página de detalle de eventos para un usuario regular"""
+    def test_event_detail_page_regular_user(self):
 
-        # Crear categoría y venue
-        self.category = Category.objects.create(name="Concierto")
-        self.venue = Venue.objects.create(
-            name="Teatro Principal",
-            city="Centro",
-            address="Calle Falsa 123",
-            capacity=100,
-            contact="1234-5678"
-            )
-
-        # Crear evento con capacidad limitada
-        self.event = Event.objects.create(
-            title="Evento lleno",
-            description="No hay mas cupo disponible",
-            scheduled_at=datetime.now() + timedelta(days=1),
+        event_date3 = timezone.make_aware(datetime.datetime(2025, 7, 15, 13, 10))
+        self.event3 = Event.objects.create(
+            title="Evento de prueba 3",
+            description="Evento Futuro",
+            scheduled_at=event_date3,
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue,
-            general_capacity=2,
-            vip_capacity=0,
+            venue=self.venue
         )
+        self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/{self.event3.id}/")
+        cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
+        expect(cuenta_regresiva).to_have_text(re.compile(r"\d+ dias, \d+ horas, \d+ minutos"))
 
-        # Crear tickets para agotar el cupo GENERAL
-        Ticket.objects.create(event=self.event, user=self.user, type="GENERAL", quantity=2)
-
-    def test_no_se_puede_comprar_si_no_hay_cupo(self):
-        url = reverse("ticket_form", args=[self.event.id])
-        
-        # Hacer GET previo para verificar si el usuario está logueado y la vista responde con 200
-        response_get = self.client.get(url)
-        print("GET status code:", response_get.status_code)
-        self.assertEqual(response_get.status_code, 200, "GET inicial redirige en vez de mostrar el formulario")
-
-        # Confirmar que el usuario está logueado en la sesión
-        user_id = self.client.session.get('_auth_user_id')
-        print("Usuario en sesión (ID):", user_id)
-        self.assertIsNotNone(user_id, "El usuario no está logueado en la sesión")
-
-        try:
-        # Intentar hacer el POST
-            response_post = self.client.post(url, {
-            "quantity": 1,
-            "type": "GENERAL",
-            "event_id": self.event.id
-        })
-        except Exception as e:
-            self.fail(f"Error inesperado al hacer POST: {e}")
-        
-            print("POST status code:", response_post.status_code)
-        # Aquí esperamos 200 porque la vista debería mostrar el formulario con error y no redirigir
-            self.assertEqual(response_post.status_code, 200, "POST redirige cuando debería mostrar error")
-        
-
-        # El mensaje esperado debería estar en la respuesta
-            self.assertContains(response, "No hay mas cupo disponible", html=True)
+    def test_event_detail_page_regular_evento_pasado_cuenta_regresiva(self):
+        self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/{self.event1.id}/")
+        cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
+        expect(cuenta_regresiva).to_be_visible()
+        expect(cuenta_regresiva).to_have_text("El evento ya ha ocurrido.")

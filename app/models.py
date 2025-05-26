@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -39,6 +40,43 @@ class Category(models.Model):
     
     def user_is_organizer(self, user):
         return user.is_organizer
+    
+    @classmethod
+    def validate(cls, name, description, is_active):
+        errors = {}
+        if name == "":
+            errors["name"] = "Debe ingresar un nombre"
+        elif Category.objects.filter(name=name).exists():
+            errors["name"] = "Categoria existente"
+        if description == "":
+            errors["description"] = "Debe ingresar una descripcion"
+        if is_active == "":
+            errors["is_active"] = "Debe ingresar su estado"
+        elif not isinstance(is_active, bool):
+            errors["is_active"] = "El estado debe ser True or False"
+        return errors
+    
+    @classmethod
+    def new(cls, name, description, is_active):
+        errors = Category.validate(name, description, is_active)
+
+        if len(errors.keys()) > 0:
+            return False, errors
+
+        Category.objects.create(
+            name=name,
+            description=description,
+            is_active=is_active
+        )
+
+        return True, None
+    
+    def update(self, name, description, is_active):
+        self.name = name or self.name
+        self.description = description or self.description
+        self.is_active = is_active or self.is_active
+        self.save()
+
 
 class Venue(models.Model):  
     name  = models.CharField(max_length=200)
@@ -134,7 +172,7 @@ class Event(models.Model):
         )
 
         return True, None
-
+    
     def update(self, title, description, scheduled_at, organizer, category, venue):
         self.title = title or self.title
         self.description = description or self.description
@@ -143,6 +181,17 @@ class Event(models.Model):
         self.category = category or self.category
         self.venue = venue or self.venue
         self.save()
+
+    def get_cuenta_regresiva(self):
+        now = timezone.now()
+        diff = self.scheduled_at - now
+        if diff.total_seconds() <= 0:
+            return None
+        days = diff.days
+        hours, remainder = divmod(diff.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+
+        return f"{days} dias, {hours} horas, {minutes} minutos"
         
 class Comment(models.Model):
     title = models.CharField(max_length=100, default="Sin título")
