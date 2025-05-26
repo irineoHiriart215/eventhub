@@ -38,7 +38,8 @@ class BaseEventTestCase(TestCase):
             scheduled_at=timezone.now() + datetime.timedelta(days=1),
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state = "AVAILABLE"
         )
 
         self.event2 = Event.objects.create(
@@ -47,7 +48,8 @@ class BaseEventTestCase(TestCase):
             scheduled_at=timezone.now() + datetime.timedelta(days=2),
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state = "REPROGRAM"
         )
 
         # Cliente para hacer peticiones
@@ -98,6 +100,19 @@ class EventsListViewTest(BaseEventTestCase):
         # Verificar que redirecciona al login
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith("/accounts/login/"))
+        
+    def test_event_state_displayed(self):
+        """Test que verifica que se muestran todos los estados de los eventos en el listado"""
+        self.client.login(username="regular", password="password123")
+        response = self.client.get(reverse("events"))
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Me aseguro de que los eventos y sus estados estan en el html, no verifico a que evento pertenecen
+        self.assertContains(response, "Evento 1")
+        self.assertContains(response, "Activo")
+        self.assertContains(response, "Evento 2")
+        self.assertContains(response, "Reprogramado")
 
 
 class EventDetailViewTest(BaseEventTestCase):
@@ -164,6 +179,19 @@ class EventDetailViewTest(BaseEventTestCase):
         response = self.client.get(reverse("event_detail", args=[evento_pasado.id]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['cuenta_regresiva'], "El evento ya ha ocurrido.")
+        
+    def test_event_detail_display_state(self):
+        """Test que verifica que se muestre correctamente el estado del evento"""
+        # Evento 1 
+        self.client.login(username="regular", password="password123")
+        response = self.client.get(reverse("event_detail", args=[self.event1.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Activo")
+        
+        # Evento 2
+        response2 = self.client.get(reverse("event_detail", args=[self.event2.id]))
+        self.assertEqual(response2.status_code, 200)
+        self.assertContains(response2, "Reprogramado")
         
 class EventFormViewTest(BaseEventTestCase):
     """Tests para la vista del formulario de eventos"""
@@ -232,7 +260,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "date": "2025-05-01",
             "time": "14:30",
             "categoria": str(self.category.id),
-            "venue": str(self.venue.id)
+            "venue": str(self.venue.id), 
+            "state": "AVAILABLE"
         }
 
         # Hacer petición POST a la vista event_form
