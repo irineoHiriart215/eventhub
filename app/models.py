@@ -144,7 +144,7 @@ class Event(models.Model):
             return True
 
     @classmethod
-    def validate(cls, title, description, scheduled_at):
+    def validate(cls, title, description, scheduled_at, state):
         errors = {}
 
         if title == "":
@@ -153,11 +153,15 @@ class Event(models.Model):
         if description == "":
             errors["description"] = "Por favor ingrese una descripcion"
 
+        valid_states = [s[0] for s in cls.EVENT_STATE]
+        if state is not None and state not in valid_states:
+            errors["state"] = "Estado inválido"
+        
         return errors
 
     @classmethod
     def new(cls, title, description, scheduled_at, organizer, category, venue, state):
-        errors = Event.validate(title, description, scheduled_at)
+        errors = Event.validate(title, description, scheduled_at, state)
 
         if len(errors.keys()) > 0:
             return False, errors
