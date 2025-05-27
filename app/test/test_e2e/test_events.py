@@ -98,6 +98,7 @@ class EventBaseTest(BaseE2ETest):
         detail_button = row0.get_by_role("link", name="Ver Detalle")
         edit_button = row0.get_by_role("link", name="Editar")
         delete_form = row0.locator("form")
+        buy_tickets_button = row0.get_by_role("link", name="Comprar entradas")
 
         expect(detail_button).to_be_visible()
         expect(detail_button).to_have_attribute("href", f"/events/{self.event1.id}/")
@@ -111,9 +112,13 @@ class EventBaseTest(BaseE2ETest):
 
             delete_button = delete_form.get_by_role("button", name="Eliminar")
             expect(delete_button).to_be_visible()
+            
+            expect(buy_tickets_button).to_have_count(0)
         else:
             expect(edit_button).to_have_count(0)
             expect(delete_form).to_have_count(0)
+            expect(buy_tickets_button).to_be_visible()
+            expect(buy_tickets_button).to_have_attribute("href", f"/tickets/create/{self.event1.id}/")
 
 
 class EventAuthenticationTest(EventBaseTest):
@@ -373,4 +378,4 @@ class EventDetailViewTest(EventBaseTest):
         expect(cuenta_regresiva).to_be_visible()
         expect(cuenta_regresiva).to_have_text("El evento ya ha ocurrido.")
         
-    
+        
