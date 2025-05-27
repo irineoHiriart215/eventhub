@@ -304,6 +304,10 @@ class EventCRUDTest(EventBaseTest):
         time.fill("03:00")
 
         expect(self.page.get_by_label("Musica")).to_be_checked()
+        
+        selected_option = self.page.locator("select[name='state'] option:checked")
+        expect(selected_option).to_have_text("Activo")
+        self.page.select_option("selected[name='state']", label="Reprogramado")
 
         # Enviar el formulario
         self.page.get_by_role("button", name="Editar Evento").click()
@@ -315,9 +319,10 @@ class EventCRUDTest(EventBaseTest):
         row = self.page.locator("table tbody tr").last
         expect(row.locator("td").nth(0)).to_have_text("Titulo editado")
         expect(row.locator("td").nth(1)).to_have_text("Descripcion Editada")
-        expect(row.locator("td").nth(2)).to_have_text("Estadio Único")
-        expect(row.locator("td").nth(3)).to_have_text("20 abr 2025, 03:00")
-        expect(row.locator("td").nth(4)).to_have_text("Musica")
+        expect(row.locator("td").nth(2)).to_have_text("Reprogramado")
+        expect(row.locator("td").nth(3)).to_have_text("Estadio Único")
+        expect(row.locator("td").nth(4)).to_have_text("20 abr 2025, 03:00")
+        expect(row.locator("td").nth(5)).to_have_text("Musica")
 
     def test_delete_event_organizer(self):
         """Test que verifica la funcionalidad de eliminar un evento para organizadores"""
@@ -367,3 +372,5 @@ class EventDetailViewTest(EventBaseTest):
         cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
         expect(cuenta_regresiva).to_be_visible()
         expect(cuenta_regresiva).to_have_text("El evento ya ha ocurrido.")
+        
+    
