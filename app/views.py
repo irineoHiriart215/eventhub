@@ -117,11 +117,18 @@ def event_form(request, id = None):
     categorias = Category.objects.all()
     venues = Venue.objects.all()
 
+    if id is not None:
+        event = get_object_or_404(Event, pk=id)
+        if event.no_changes_after_cancelled():
+            messages.error(request, "No se puede modificar un evento cancelado.")
+            return redirect("events")
+
     if request.method == "POST":
         title = request.POST.get("title")
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
+        state = request.POST.get("state")
 
         [year, month, day] = date.split("-")
         [hour, minutes] = time.split(":")
@@ -137,10 +144,9 @@ def event_form(request, id = None):
         venue= get_object_or_404(Venue, id=venue_id)
         
         if id is None:
-            Event.new(title, description, scheduled_at, request.user, category, venue)
+            Event.new(title, description, scheduled_at, request.user, category, venue, state)
         else:
-            event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user, category, venue)
+            event.update(title, description, scheduled_at, request.user, category, venue, state)
 
         return redirect("events")
 
@@ -252,6 +258,11 @@ def ticket_form(request, event_id=None, id=None):
         event = ticket.event
     elif event_id:
         event = get_object_or_404(Event, pk=event_id)
+
+    if not event.can_be_bought():
+        messages.error(request, f"No se puede realizar la compra porque el evento esta {event.get_state_display()}.")
+        return redirect("events")
+
 
     if event.organizer == request.user:
         messages.error(request, "El organizador no tiene permiso para comprar tickets de su propio evento.")

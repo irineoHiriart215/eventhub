@@ -4,6 +4,8 @@ import time
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib.messages import get_messages
+
 from datetime import timedelta
 
 from app.models import Category, Event, Ticket, User, Venue
@@ -39,7 +41,8 @@ class BaseEventTestCase(TestCase):
             scheduled_at=timezone.now() + datetime.timedelta(days=1),
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state = "AVAILABLE"
         )
 
         self.event2 = Event.objects.create(
@@ -48,7 +51,8 @@ class BaseEventTestCase(TestCase):
             scheduled_at=timezone.now() + datetime.timedelta(days=2),
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state = "CANCELLED"
         )
 
         # Cliente para hacer peticiones
@@ -99,7 +103,35 @@ class EventsListViewTest(BaseEventTestCase):
         # Verificar que redirecciona al login
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith("/accounts/login/"))
+        
+    def test_events_buy_tickets_with_invalid_state(self):
+        """Test que verifica que se redirige al usuario cuando intenta comprar tickets de un evento con estado: Cancelado, Agotado o Terminado"""
+        self.client.login(username="regular", password="password123")
+        response = self.client.get(reverse("events"))
+        self.assertEqual(response.status_code, 200)
+        
+        response = self.client.get(reverse("ticket_form", args=[self.event2.id]), follow=True)
+        
+        self.assertRedirects(response, reverse("events"))
+        
+        # Verifica que se muestra un mensaje de error
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any("no se puede realizar la compra" in m.message.lower() for m in messages))
+        
+    def test_cannot_edit_cancelled_event(self):
+        """Test que verifica que se evita al organizador editar un evento que ya fue cancelado"""
+        self.client.login(username="organizador", password="password123")
 
+        response = self.client.get(reverse("events"))
+        self.assertEqual(response.status_code, 200)
+        
+        response = self.client.get(reverse("event_edit", args=[self.event2.id]), follow=True)
+        
+        self.assertRedirects(response, reverse("events"))
+        
+        # Verifica que se muestra un mensaje de error
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any("no se puede modificar" in m.message.lower() for m in messages))    
 
 class EventDetailViewTest(BaseEventTestCase):
     """Tests para la vista de detalle de un evento"""
@@ -165,6 +197,8 @@ class EventDetailViewTest(BaseEventTestCase):
         response = self.client.get(reverse("event_detail", args=[evento_pasado.id]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['cuenta_regresiva'], "El evento ya ha ocurrido.")
+        
+    
         
 class EventFormViewTest(BaseEventTestCase):
     """Tests para la vista del formulario de eventos"""
@@ -233,7 +267,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "date": "2025-05-01",
             "time": "14:30",
             "categoria": str(self.category.id),
-            "venue": str(self.venue.id)
+            "venue": str(self.venue.id), 
+            "state": "AVAILABLE"
         }
 
         # Hacer petición POST a la vista event_form
