@@ -444,4 +444,4 @@ class TicketIntegrationTest(TestCase):
         'quantity': 1,
         'type': 'GENERAL'
         })
-        self.assertContains(response, "No hay mas cupo disponible", status_code=200)
+        self.assertContains(response, "No hay más cupo disponible.", status_code=200)

@@ -11,6 +11,7 @@ from .models import Event, User, Ticket
 from .models import Comment, Category, Rating, Venue
 
 
+
 def register(request):
     if request.method == "POST":
         email = request.POST.get("email")
@@ -245,7 +246,6 @@ def ticket_list(request):
     tickets = Ticket.objects.filter(user=request.user)
     return render(request, 'app/ticket_list.html', {'tickets': tickets})
 
-# View para crear o editar un ticket
 # View para crear o editar un ticket
 @login_required
 def ticket_form(request, event_id=None, id=None):
