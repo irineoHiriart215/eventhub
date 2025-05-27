@@ -64,7 +64,7 @@ class EventBaseTest(BaseE2ETest):
         headers = self.page.locator("table thead th")
         expect(headers.nth(0)).to_have_text("Título")
         expect(headers.nth(1)).to_have_text("Descripción")
-        expect(headers.nth(2)).to_have_text("Estados")
+        expect(headers.nth(2)).to_have_text("Estado")
         expect(headers.nth(3)).to_have_text("Recinto")
         expect(headers.nth(4)).to_have_text("Fecha")
         expect(headers.nth(5)).to_have_text("Categoria")
@@ -118,7 +118,7 @@ class EventBaseTest(BaseE2ETest):
             expect(edit_button).to_have_count(0)
             expect(delete_form).to_have_count(0)
             expect(buy_tickets_button).to_be_visible()
-            expect(buy_tickets_button).to_have_attribute("href", f"/tickets/create/{self.event1.id}/")
+            expect(buy_tickets_button).to_have_attribute("href", f"/ticket/create/{self.event1.id}")
 
 
 class EventAuthenticationTest(EventBaseTest):
@@ -312,7 +312,7 @@ class EventCRUDTest(EventBaseTest):
         
         selected_option = self.page.locator("select[name='state'] option:checked")
         expect(selected_option).to_have_text("Activo")
-        self.page.select_option("selected[name='state']", label="Reprogramado")
+        self.page.select_option("select[name='state']", label="Reprogramado")
 
         # Enviar el formulario
         self.page.get_by_role("button", name="Editar Evento").click()

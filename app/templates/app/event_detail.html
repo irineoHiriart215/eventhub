@@ -25,7 +25,7 @@
                         <h5 class="card-title mb-0">Detalles del Evento</h5>
                     </div>
                     <div class="col-auto">
-                        <span class="badge {{ event|get_state_badge_class }}">{{ event.get_state_display }}</span>
+                        <span data-testid="state" class="badge {{ event|get_state_badge_class }}">{{ event.get_state_display }}</span>
                     </div>
                 </div>
                 <p class="card-text">{{ event.description }}</p>
