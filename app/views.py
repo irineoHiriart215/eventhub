@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
 
 from .models import Event, User, Ticket
 from .models import Comment, Category, Rating, Venue
@@ -75,7 +76,18 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    return render(request, "app/event_detail.html", {"event": event})
+    cuenta_regresiva = None
+    now = timezone.now()
+    if not request.user.is_organizer:
+        if event.scheduled_at > now:
+            cuenta_regresiva = event.get_cuenta_regresiva()
+        else:
+            cuenta_regresiva = "El evento ya ha ocurrido."
+    
+    return render(
+            request, "app/event_detail.html",
+            {"event": event, "cuenta_regresiva": cuenta_regresiva}
+            )
 
 
 @login_required
@@ -144,7 +156,6 @@ def event_form(request, id = None):
     )
 
 
-#Creamos la vista para gestionar los comentarios.
 @login_required
 def create_comment(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
@@ -154,7 +165,6 @@ def create_comment(request, event_id):
         text = request.POST.get("text", "").strip()
         
         if title and text:
-            # Crear el comentario con título y texto
             comment = Comment.objects.create(
                 event=event,
                 user=request.user,
@@ -172,7 +182,6 @@ def create_comment(request, event_id):
 
     return render(request, "app/create_comment.html", {"event": event})
 
-#Vista para editar un comentario
 @login_required
 def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
@@ -199,12 +208,11 @@ def edit_comment(request, comment_id):
                 {"comment": comment, "event": comment.event, "error_message": error_message}
             )
     
-#Vista para eliminar un comentario
 @login_required
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
+    event = comment.event 
 
-     # Lógica de permiso según el template
     if comment.user != request.user and event.organizer != request.user:
         messages.error(request, "No tenés permiso para eliminar este comentario.")
         return redirect("event_detail", id=event.id)
@@ -218,7 +226,7 @@ def delete_comment(request, comment_id):
     return render(
         request,
         "app/delete_comment.html",
-        {"comment": comment, "event": comment.event},
+        {"comment": comment, "event": event},
     )
     
 @login_required
@@ -237,11 +245,12 @@ def ticket_list(request):
 def ticket_form(request, event_id=None, id=None):
     ticket = None
     event = None
+    
     if id:
         ticket = get_object_or_404(Ticket, pk=id, user=request.user)
         if not ticket.can_be_modified_by_user(request.user):
             return redirect("home")
-        event= ticket.event
+        event = ticket.event
     elif event_id:
         event = get_object_or_404(Event, pk=event_id)
 
@@ -253,7 +262,53 @@ def ticket_form(request, event_id=None, id=None):
         quantity_input = request.POST.get("quantity")
         type_input = request.POST.get("type")
         event_id_post = request.POST.get("event_id")
+        
+        if not event and event_id_post:
+            event = get_object_or_404(Event, pk=event_id_post)
+            
+        try:
+            quantity = int(quantity_input)
+        except (TypeError, ValueError):
+            messages.error(request, "La cantidad ingresada no es válida.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
 
+        if quantity <= 0:
+            messages.error(request, "La cantidad debe ser mayor a cero.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+        
+        # Calcular cupo disponible según el tipo de entrada
+        if type_input == "VIP":
+            capacity = event.vip_capacity
+        elif type_input == "GENERAL":
+            capacity = event.general_capacity
+        else:
+            messages.error(request, "Tipo de entrada no válido.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        # Obtener tickets vendidos sin contar el que se está editando (si aplica)
+        total_tickets_sold = Ticket.objects.filter(event=event, type=type_input)
+        if ticket:
+            total_tickets_sold = total_tickets_sold.exclude(pk=ticket.pk)
+
+        total_sold = total_tickets_sold.aggregate(total=Sum('quantity'))['total'] or 0
+        available = capacity - total_sold
+
+        total_sold_all_types = Ticket.objects.filter(event=event).exclude(pk=ticket.pk if ticket else None).aggregate(total=Sum('quantity'))['total'] or 0
+        total_available = event.total_capacity - total_sold_all_types       
+        if available < 0:
+            available = 0
+
+        print(f"Tipo: {type_input}, Capacidad tipo: {capacity}, Vendidos tipo: {total_sold}, Disponible tipo: {available}, Pedido: {quantity}")
+        print(f"Capacidad total: {event.total_capacity}, Vendidos total: {total_sold_all_types}, Disponible total: {total_available}")
+
+    
+        if available == 0:
+            messages.error(request, "No hay mas cupo disponible")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        if quantity > available:
+            messages.error(request, f"No hay suficiente cupo disponible para este tipo de entrada. Solo quedan {available} entradas.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
         # Validaciones server-side
         errors = []
         
@@ -312,6 +367,7 @@ def ticket_delete(request, id):
 def create_categoria(request):
     user = request.user
     categoria = {}
+    errors = {}
 
     if not user.is_organizer:
         return redirect("categoria")
@@ -319,28 +375,25 @@ def create_categoria(request):
     if request.method == "POST":
         name = request.POST.get("name").strip()
         description = request.POST.get("description").strip()
-        is_active = request.POST.get("is_active")
+        is_active_str = request.POST.get("is_active")
 
-        errors = []
+        is_active = is_active_str.lower() == "true" 
 
-        if not name:
-            errors.append("Debe ingresar un nombre.")
-        
-        if errors:
-            for error in errors:
-                messages.error(request, error)
-        else:
-            categoria = Category.objects.create(
-                name = name,
-                description = description,
-                is_active = is_active )
+        ok, errors = Category.new(
+            name = name,
+            description = description,
+            is_active = is_active
+            )
+        if ok:
             messages.success(request, "Categoria creada.")
             return redirect('categoria')
+        else:
+            categoria = {"name":name, "description":description, "is_active":is_active, }
 
     return render(
         request,
         "app/crearCategoria.html",
-        {"categoria": categoria, "user_is_organizer": request.user.is_organizer})
+        {"categoria": categoria, "errors": errors, "user_is_organizer": request.user.is_organizer})
 
 
 @login_required
@@ -359,10 +412,10 @@ def edit_categoria(request, category_id):
         return redirect("categoria")
 
     if request.method == "POST":
-        categoria.name = request.POST.get("name")
-        categoria.description = request.POST.get("description")
-        categoria.is_active = request.POST.get("is_active")
-        categoria.save()
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        is_active = request.POST.get("is_active")
+        categoria.update(name, description, is_active)
         return redirect('categoria')
 
     return render(
