@@ -4,10 +4,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
-
+from django.core.exceptions import ValidationError
+from django.db.models import Sum
 
 from .models import Event, User, Ticket
-from .models import Event, Comment, Category, Rating, Venue
+from .models import Comment, Category, Rating, Venue
 
 
 def register(request):
@@ -74,7 +75,18 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    return render(request, "app/event_detail.html", {"event": event})
+    cuenta_regresiva = None
+    now = timezone.now()
+    if not request.user.is_organizer:
+        if event.scheduled_at > now:
+            cuenta_regresiva = event.get_cuenta_regresiva()
+        else:
+            cuenta_regresiva = "El evento ya ha ocurrido."
+    
+    return render(
+            request, "app/event_detail.html",
+            {"event": event, "cuenta_regresiva": cuenta_regresiva}
+            )
 
 
 @login_required
@@ -105,11 +117,18 @@ def event_form(request, id = None):
     categorias = Category.objects.all()
     venues = Venue.objects.all()
 
+    if id is not None:
+        event = get_object_or_404(Event, pk=id)
+        if event.no_changes_after_cancelled():
+            messages.error(request, "No se puede modificar un evento cancelado.")
+            return redirect("events")
+
     if request.method == "POST":
         title = request.POST.get("title")
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
+        state = request.POST.get("state")
 
         [year, month, day] = date.split("-")
         [hour, minutes] = time.split(":")
@@ -125,10 +144,9 @@ def event_form(request, id = None):
         venue= get_object_or_404(Venue, id=venue_id)
         
         if id is None:
-            Event.new(title, description, scheduled_at, request.user, category, venue)
+            Event.new(title, description, scheduled_at, request.user, category, venue, state)
         else:
-            event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user, category, venue)
+            event.update(title, description, scheduled_at, request.user, category, venue, state)
 
         return redirect("events")
 
@@ -143,29 +161,32 @@ def event_form(request, id = None):
     )
 
 
-#Creamos la vista para gestionar los comentarios.
 @login_required
 def create_comment(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
 
     if request.method == "POST":
-        text = request.POST.get("text")
+        title = request.POST.get("title", "").strip() 
+        text = request.POST.get("text", "").strip()
         
-        # Crear el comentario y asociarlo con el evento y el usuario
-        comment = Comment.objects.create(
-            event=event,
-            user=request.user,
-            text=text
-        )
+        if title and text:
+            comment = Comment.objects.create(
+                event=event,
+                user=request.user,
+                title=title,
+                text=text
+            )
+            return redirect('event_detail', id=event.id)
+        else:
+            error_message = "Ambos campos son obligatorios."
+            return render(
+                request,
+                "app/create_comment.html",
+                {"event": event, "error_message": error_message}
+            )
 
-        # Redirigir de nuevo a la página del evento
-        return redirect('event_detail', id=event.id)
+    return render(request, "app/create_comment.html", {"event": event})
 
-    # Si no es POST, redirigir al detalle del evento (por ejemplo, si alguien intenta acceder a esta vista sin enviar datos)
-    return redirect('event_detail', id=event.id)
-
-
-#Vista para editar un comentario
 @login_required
 def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
@@ -174,32 +195,43 @@ def edit_comment(request, comment_id):
         return redirect("event_detail", id=comment.event.id)
 
     if request.method == "POST":
-        comment.text = request.POST.get("text")
-        comment.save()
-        return redirect("event_detail", id=comment.event.id)
+        title = request.POST.get("title", "").strip()
+        text = request.POST.get("text", "").strip()
 
+        if title and text:
+            comment.title = title
+            comment.text = text
+            comment.save()
+            return redirect("event_detail", id=comment.event.id)
+        else:
+            error_message = "Ambos campos son obligatorios."
+    else:
+        error_message = None
     return render(
-        request,
-        "app/edit_comment.html",
-        {"comment": comment, "event": comment.event},
-    )
+                request,
+               "app/edit_comment.html",
+                {"comment": comment, "event": comment.event, "error_message": error_message}
+            )
     
-#Vista para eliminar un comentario
 @login_required
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
+    event = comment.event 
 
-    if not comment.can_user_delete(request.user):
-        return redirect("event_detail", id=comment.event.id)
+    if comment.user != request.user and event.organizer != request.user:
+        messages.error(request, "No tenés permiso para eliminar este comentario.")
+        return redirect("event_detail", id=event.id)
+        event = comment.event
 
     if request.method == "POST":
         comment.delete()
+        messages.success(request, "Comentario eliminado correctamente.")
         return redirect("event_detail", id=comment.event.id)
 
     return render(
         request,
         "app/delete_comment.html",
-        {"comment": comment, "event": comment.event},
+        {"comment": comment, "event": event},
     )
     
 @login_required
@@ -214,53 +246,105 @@ def ticket_list(request):
     return render(request, 'app/ticket_list.html', {'tickets': tickets})
 
 # View para crear o editar un ticket
+# View para crear o editar un ticket
 @login_required
 def ticket_form(request, event_id=None, id=None):
     ticket = None
     event = None
+
     if id:
         ticket = get_object_or_404(Ticket, pk=id, user=request.user)
         if not ticket.can_be_modified_by_user(request.user):
             return redirect("home")
-        event= ticket.event
+        event = ticket.event
     elif event_id:
         event = get_object_or_404(Event, pk=event_id)
 
+    if not event.can_be_bought():
+        messages.error(request, f"No se puede realizar la compra porque el evento está {event.get_state_display()}.")
+        return redirect("events")
+
+    if event.organizer == request.user:
+        messages.error(request, "El organizador no tiene permiso para comprar tickets de su propio evento.")
+        return redirect("events")
+
     if request.method == "POST":
-        quantity = int(request.POST.get("quantity"))
-        type_ = request.POST.get("type")
+        quantity_input = request.POST.get("quantity")
+        type_input = request.POST.get("type")
         event_id_post = request.POST.get("event_id")
-
-        if ticket:
-            # Validar límite al modificar
-            existing_tickets = Ticket.objects.filter(user=request.user, event=ticket.event).exclude(pk=ticket.pk)
-            total_quantity = sum(t.quantity for t in existing_tickets)
-
-            if total_quantity + quantity > 4:
-                messages.error(request, f"No podés comprar más de 4 entradas para este evento. Ya tenés {total_quantity}.")
-                return render(request, "app/ticket_form.html", { "ticket": ticket, "event": ticket.event })
-
-            ticket.quantity = quantity
-            ticket.type = type_
-            ticket.save()
-        else:
+        
+        if not event and event_id_post:
             event = get_object_or_404(Event, pk=event_id_post)
 
+        try:
+            quantity = int(quantity_input)
+        except (TypeError, ValueError):
+            messages.error(request, "La cantidad ingresada no es válida.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        if quantity <= 0:
+            messages.error(request, "La cantidad debe ser mayor a cero.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        # Validar el tipo de entrada
+        if type_input == "VIP":
+            capacity = event.vip_capacity
+        elif type_input == "GENERAL":
+            capacity = event.general_capacity
+        else:
+            messages.error(request, "Tipo de entrada no válido.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        # Tickets ya vendidos por tipo (excluyendo el ticket actual si se está editando)
+        total_tickets_sold = Ticket.objects.filter(event=event, type=type_input)
+        if ticket:
+            total_tickets_sold = total_tickets_sold.exclude(pk=ticket.pk)
+
+        total_sold = total_tickets_sold.aggregate(total=Sum('quantity'))['total'] or 0
+        available = capacity - total_sold
+
+        if available < 0:
+            available = 0
+
+        if available == 0:
+            messages.error(request, "No hay más cupo disponible.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        if quantity > available:
+            messages.error(request, f"No hay suficiente cupo disponible para este tipo de entrada. Solo quedan {available} entradas.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        # ✅ Validación de máximo 4 entradas por usuario
+        if ticket:
+            existing_tickets = Ticket.objects.filter(user=request.user, event=event).exclude(pk=ticket.pk)
+        else:
             existing_tickets = Ticket.objects.filter(user=request.user, event=event)
-            total_quantity = sum(t.quantity for t in existing_tickets)
 
-            if total_quantity + quantity > 4:
-                messages.error(request, f"No podés comprar más de 4 entradas para este evento. Ya tenés {total_quantity}.")
-                return render(request, "app/ticket_form.html", { "ticket": ticket, "event": event })
+        total_quantity_user = sum(t.quantity for t in existing_tickets)
 
+        if total_quantity_user + quantity > 4:
+            messages.error(request, f"No podés comprar más de 4 entradas para este evento. Ya tenés {total_quantity_user}.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        # Crear o actualizar ticket
+        if ticket:
+            ticket.quantity = quantity
+            ticket.type = type_input
+            ticket.save()
+            messages.success(request, "Se modificó la compra con éxito.")
+        else:
             ticket = Ticket.objects.create(
-                quantity = quantity,
-                type=type_,
+                quantity=quantity,
+                type=type_input,
                 user=request.user,
                 event=event
             )
+            messages.success(request, "Se realizó la compra con éxito.")
+
         return redirect("ticket_list")
-    return render(request, "app/ticket_form.html", { "ticket": ticket, "event" : event})
+
+    return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
 
 # View para ver el detalle de un ticket
 @login_required
@@ -275,6 +359,7 @@ def ticket_delete(request, id):
 
     if request.method=="POST" and ticket.can_be_deleted_by_user(request.user):
         ticket.delete()
+        messages.success(request, "Se elimino la compra con exito.")
         return redirect("ticket_list")
     return render(request, "app/ticket_delete.html", {"ticket": ticket})
     
@@ -284,6 +369,7 @@ def ticket_delete(request, id):
 def create_categoria(request):
     user = request.user
     categoria = {}
+    errors = {}
 
     if not user.is_organizer:
         return redirect("categoria")
@@ -291,28 +377,25 @@ def create_categoria(request):
     if request.method == "POST":
         name = request.POST.get("name").strip()
         description = request.POST.get("description").strip()
-        is_active = request.POST.get("is_active")
+        is_active_str = request.POST.get("is_active")
 
-        errors = []
+        is_active = is_active_str.lower() == "true" 
 
-        if not name:
-            errors.append("Debe ingresar un nombre.")
-        
-        if errors:
-            for error in errors:
-                messages.error(request, error)
-        else:
-            categoria = Category.objects.create(
-                name = name,
-                description = description,
-                is_active = is_active )
+        ok, errors = Category.new(
+            name = name,
+            description = description,
+            is_active = is_active
+            )
+        if ok:
             messages.success(request, "Categoria creada.")
             return redirect('categoria')
+        else:
+            categoria = {"name":name, "description":description, "is_active":is_active, }
 
     return render(
         request,
         "app/crearCategoria.html",
-        {"categoria": categoria, "user_is_organizer": request.user.is_organizer})
+        {"categoria": categoria, "errors": errors, "user_is_organizer": request.user.is_organizer})
 
 
 @login_required
@@ -331,10 +414,10 @@ def edit_categoria(request, category_id):
         return redirect("categoria")
 
     if request.method == "POST":
-        categoria.name = request.POST.get("name")
-        categoria.description = request.POST.get("description")
-        categoria.is_active = request.POST.get("is_active")
-        categoria.save()
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        is_active = request.POST.get("is_active")
+        categoria.update(name, description, is_active)
         return redirect('categoria')
 
     return render(
@@ -519,14 +602,17 @@ def create_venue(request):
             for error in errors: 
                 messages.error(request, error)
         else:
-            venue = Venue.objects.create(
-                name = name,
-                address = address,
-                city = city,
-                capacity = capacity,
-                contact = contact)
-            messages.success(request, "Recinto creado")
-            return redirect('venue')
+            try:
+                venue = Venue(name=name,address=address,city=city,capacity=capacity,contact=contact,)
+                venue.full_clean()
+                venue.save()
+                messages.success(request, "Recinto creado")
+                return redirect('venue')
+            except ValidationError as e:
+                for field, messages_list in e.message_dict.items():
+                    for message in messages_list:
+                        messages.error(request, f"{field}: {message}")
+
 
     return render(
         request, 
@@ -553,8 +639,16 @@ def edit_venue(request, venue_id):
         venue.city = request.POST.get("city")
         venue.capacity = request.POST.get("capacity")
         venue.contact = request.POST.get("contact")
-        venue.save()
-        return redirect ('venue')
+        
+        try:
+            venue.full_clean()
+            venue.save()
+            messages.success(request, "Recinto actualizado")
+            return redirect('venue')
+        except ValidationError as e:
+            for field, messages_list in e.message_dict.items():
+                for message in messages_list:
+                    messages.error(request, f"{field}: {message}")
         
     return render(request, "app/editVenue.html" ,  {"venue": venue, "user_is_organizer": request.user.is_organizer},)
     

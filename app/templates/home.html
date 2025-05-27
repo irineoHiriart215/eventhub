@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if messages %}
+    <div class="alert alert-danger">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+{% endif %}
+
 <div class="container mt-4">
     <div class="p-5 bg-light rounded-3">
         <h1 class="display-5 fw-bold">Eventos y Entradas</h1>

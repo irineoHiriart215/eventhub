@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load event_extras %}
 
 {% block title %}Eventos{% endblock %}
 
@@ -21,6 +22,7 @@
             <tr>
                 <th>Título</th>
                 <th>Descripción</th>
+                <th>Estado</th>
                 <th>Recinto</th>
                 <th>Fecha</th>
                 <th>Categoria</th>
@@ -32,6 +34,7 @@
                 <tr>
                     <td>{{ event.title }}</td>
                     <td>{{ event.description }}</td>
+                    <td><span class="badge {{ event|get_state_badge_class }}">{{ event.get_state_display }}</span></td>
                     <td>{{ event.venue.name }}</td>
                     <td>{{ event.scheduled_at|date:"d b Y, H:i" }}</td>
                     <td>{{ event.category.name }}</td>
@@ -43,12 +46,14 @@
                                title="Ver detalle">
                                 <i class="bi bi-eye" aria-hidden="true"></i>
                             </a>
-                            <a href="{% url 'ticket_form' event.id %}"
-                               class="btn btn-sm btn-outline-primary"
-                               aria-label="Comprar entradas"
-                               title="Comprar entradas">
-                                <i class="bi bi-cart" aria-hidden="true"></i>
-                            </a>
+                            {% if not user_is_organizer %}
+                                <a href="{% url 'ticket_form' event.id %}"
+                                class="btn btn-sm btn-outline-primary"
+                                aria-label="Comprar entradas"
+                                title="Comprar entradas">
+                                    <i class="bi bi-cart" aria-hidden="true"></i>
+                                </a>
+                            {% endif %}
                             {% if user_is_organizer %}
                                 <a href="{% url 'event_edit' event.id %}"
                                     class="btn btn-sm btn-outline-secondary"
@@ -62,7 +67,7 @@
                                         title="Eliminar"
                                         type="submit"
                                         aria-label="Eliminar"
-                                        titile="Eliminar">
+                                        title="Eliminar">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
                                 </form>

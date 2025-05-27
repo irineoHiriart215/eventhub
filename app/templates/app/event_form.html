@@ -13,7 +13,7 @@
             </h1>
             <div class="card">
                 <div class="card-body">
-                    <form action="{% url 'event_form' %}" method="POST">
+                    <form action="{% if event.id %}{% url 'event_edit' event.id %}{% else %}{% url 'event_form' %}{% endif %}" method="POST">
                         {% csrf_token %}
                         <div class="vstack gap-3">
                             <div>
@@ -35,12 +35,12 @@
                                     required="">{{ event.description }}</textarea>
                             </div>
                             <div>
-                                <label for="description" class="form_label">Recinto</label>
+                                <label for="venue" class="form_label">Recinto</label>
                                 <select id="venue" name="venue" class="form-control" required>
                                     <option value="" disabled selected>Seleccione un recinto</option>
                                     {% for v in venues %}
                                         <!-- El valor es el ID del recinto, y el texto visible es el nombre -->
-                                        <option value="{{ v.id }}">{{ v.name }}</option>
+                                        <option value="{{ v.id }}" {% if event and v.id == event.venue.id %}selected{% endif %}>{{ v.name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -76,6 +76,7 @@
                                                 name="categoria"
                                                 id="categoria{{ categoria.id }}"
                                                 value="{{ categoria.id }}"
+                                                {% if event and categoria.id == event.category.id %}checked{% endif %}
                                                 required>
                                             <label class="form-check-label" for="categoria{{ categoria.id }}">
                                                 {{ categoria.name }}
@@ -84,6 +85,16 @@
                                     {% endfor %}
                                     </div>
                                 </div>
+                            </div>
+                            <div>
+                                <label for="state" class="form-label">Estado</label>
+                                <select name="state" id="state">
+                                    <option value="AVAILABLE" {% if event.state == "AVAILABLE" %} selected {% endif %}>Activo</option>
+                                    <option value="CANCELLED" {% if event.state == "CANCELLED" %} selected {% endif %}>Cancelado</option>
+                                    <option value="REPROGRAM" {% if event.state == "REPROGRAM" %} selected {% endif %}>Reprogramado</option>
+                                    <option value="SOLD_OUT" {% if event.state == "SOLD_OUT" %} selected {% endif %}>Agotado</option>
+                                    <option value="FINISHED" {% if event.state == "FINISHED" %} selected {% endif %}>Finalizado</option>
+                                </select>
                             </div>
                             <div>
                                 <button type="submit" class="btn btn-primary">
