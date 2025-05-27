@@ -378,4 +378,10 @@ class EventDetailViewTest(EventBaseTest):
         expect(cuenta_regresiva).to_be_visible()
         expect(cuenta_regresiva).to_have_text("El evento ya ha ocurrido.")
         
-        
+    def test_event_detail_display_event(self):
+        """Test que verifica que se muestra bien el estado de un evento especifico"""
+        self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/{self.event1.id}/")
+        state = self.page.get_by_test_id("state")
+        expect(state).to_be_visible()
+        expect(state).to_have_text("Activo")
