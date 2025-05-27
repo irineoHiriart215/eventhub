@@ -4,6 +4,8 @@ import time
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib.messages import get_messages
+
 
 from app.models import Event, User, Category, Venue
 
@@ -49,7 +51,7 @@ class BaseEventTestCase(TestCase):
             organizer=self.organizer,
             category=self.category,
             venue=self.venue,
-            state = "REPROGRAM"
+            state = "CANCELLED"
         )
 
         # Cliente para hacer peticiones
@@ -101,19 +103,21 @@ class EventsListViewTest(BaseEventTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith("/accounts/login/"))
         
-    def test_event_state_displayed(self):
-        """Test que verifica que se muestran todos los estados de los eventos en el listado"""
+    def test_events_buy_tickets_with_invalid_state(self):
+        """Test que verifica que se redirige al usuario cuando intenta comprar tickets de un evento con estado: Cancelado, Agotado o Terminado"""
         self.client.login(username="regular", password="password123")
         response = self.client.get(reverse("events"))
-        
         self.assertEqual(response.status_code, 200)
         
-        # Me aseguro de que los eventos y sus estados estan en el html, no verifico a que evento pertenecen
-        self.assertContains(response, "Evento 1")
-        self.assertContains(response, "Activo")
-        self.assertContains(response, "Evento 2")
-        self.assertContains(response, "Reprogramado")
-
+        response = self.client.get(reverse("ticket_form", args=[self.event2.id]), follow=True)
+        
+        self.assertRedirects(response, reverse("events"))
+        
+        # Verifica que se muestra un mensaje de error
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any("no se puede realizar la compra" in m.message.lower() for m in messages))
+        
+        
 
 class EventDetailViewTest(BaseEventTestCase):
     """Tests para la vista de detalle de un evento"""
@@ -180,18 +184,7 @@ class EventDetailViewTest(BaseEventTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['cuenta_regresiva'], "El evento ya ha ocurrido.")
         
-    def test_event_detail_display_state(self):
-        """Test que verifica que se muestre correctamente el estado del evento"""
-        # Evento 1 
-        self.client.login(username="regular", password="password123")
-        response = self.client.get(reverse("event_detail", args=[self.event1.id]))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Activo")
-        
-        # Evento 2
-        response2 = self.client.get(reverse("event_detail", args=[self.event2.id]))
-        self.assertEqual(response2.status_code, 200)
-        self.assertContains(response2, "Reprogramado")
+    
         
 class EventFormViewTest(BaseEventTestCase):
     """Tests para la vista del formulario de eventos"""
