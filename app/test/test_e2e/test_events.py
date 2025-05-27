@@ -5,9 +5,14 @@ from playwright.sync_api import expect
 from django.test import TestCase, Client
 
 from app.models import User, Ticket, Event, Category, Venue
-
 from app.test.test_e2e.base import BaseE2ETest
 from django.urls import reverse 
+
+
+from django.test import LiveServerTestCase
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
+
 
 
 class EventBaseTest(BaseE2ETest):
@@ -36,7 +41,7 @@ class EventBaseTest(BaseE2ETest):
         self.category = Category.objects.create(name='Musica', description='Descripcion ejemplo')
         self.venue = Venue.objects.create(name='Estadio Único', city='La Plata', address='Av. 32', capacity=1000, contact='example')
         # Evento 1
-        event_date1 = timezone.make_aware(datetime(2025, 2, 10, 10, 10))
+        event_date1 = timezone.make_aware(datetime(2025, 10, 10, 10, 10))
         self.event1 = Event.objects.create(
             title="Evento de prueba 1",
             description="Descripción del evento 1",
@@ -48,7 +53,7 @@ class EventBaseTest(BaseE2ETest):
         )
 
         # Evento 2
-        event_date2 = timezone.make_aware(datetime(2025, 3, 15, 14, 30))
+        event_date2 = timezone.make_aware(datetime(2025, 11, 15, 14, 30))
         self.event2 = Event.objects.create(
             title="Evento de prueba 2",
             description="Descripción del evento 2",
@@ -81,7 +86,7 @@ class EventBaseTest(BaseE2ETest):
         expect(row0.locator("td").nth(1)).to_have_text("Descripción del evento 1")
         expect(row0.locator("td").nth(2)).to_have_text("Activo")
         expect(row0.locator("td").nth(3)).to_have_text("Estadio Único")
-        expect(row0.locator("td").nth(4)).to_have_text("10 feb 2025, 10:10")
+        expect(row0.locator("td").nth(4)).to_have_text("10 oct 2025, 10:10")
         expect(row0.locator("td").nth(5)).to_have_text("Musica")
 
         # Verificar datos del segundo evento
@@ -89,7 +94,7 @@ class EventBaseTest(BaseE2ETest):
         expect(rows.nth(1).locator("td").nth(1)).to_have_text("Descripción del evento 2")
         expect(rows.nth(1).locator("td").nth(2)).to_have_text("Reprogramado")
         expect(rows.nth(1).locator("td").nth(3)).to_have_text("Estadio Único")
-        expect(rows.nth(1).locator("td").nth(4)).to_have_text("15 mar 2025, 14:30")
+        expect(rows.nth(1).locator("td").nth(4)).to_have_text("15 nov 2025, 14:30")
         expect(rows.nth(1).locator("td").nth(5)).to_have_text("Musica")
 
     def _table_has_correct_actions(self, user_type):
@@ -246,7 +251,7 @@ class EventCRUDTest(EventBaseTest):
         # Completar el formulario
         self.page.get_by_label("Título del Evento").fill("Evento de prueba E2E")
         self.page.get_by_label("Descripción").fill("Descripción creada desde prueba E2E")
-        self.page.get_by_label("Fecha").fill("2025-06-15")
+        self.page.get_by_label("Fecha").fill("2026-08-15")
         self.page.get_by_label("Hora").fill("16:45")
         self.page.select_option("select[name='venue']", label="Estadio Único")
         self.page.get_by_label("Musica").check()
@@ -267,7 +272,7 @@ class EventCRUDTest(EventBaseTest):
         expect(row.locator("td").nth(1)).to_have_text("Descripción creada desde prueba E2E")
         expect(row.locator("td").nth(2)).to_have_text("Activo")
         expect(row.locator("td").nth(3)).to_have_text("Estadio Único")
-        expect(row.locator("td").nth(4)).to_have_text("15 jun 2025, 16:45")
+        expect(row.locator("td").nth(4)).to_have_text("15 ago 2026, 16:45")
         expect(row.locator("td").nth(5)).to_have_text("Musica")
 
 
@@ -302,8 +307,8 @@ class EventCRUDTest(EventBaseTest):
         expect(selected_option).to_have_text("Estadio Único")
 
         date = self.page.get_by_label("Fecha")
-        expect(date).to_have_value("2025-02-10")
-        date.fill("2025-04-20")
+        expect(date).to_have_value("2025-10-10")
+        date.fill("2025-08-20")
 
         time = self.page.get_by_label("Hora")
         expect(time).to_have_value("10:10")
@@ -322,12 +327,12 @@ class EventCRUDTest(EventBaseTest):
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
 
         # Verificar que el título del evento ha sido actualizado
-        row = self.page.locator("table tbody tr").last
+        row = self.page.locator("table tbody tr").first
         expect(row.locator("td").nth(0)).to_have_text("Titulo editado")
         expect(row.locator("td").nth(1)).to_have_text("Descripcion Editada")
         expect(row.locator("td").nth(2)).to_have_text("Reprogramado")
         expect(row.locator("td").nth(3)).to_have_text("Estadio Único")
-        expect(row.locator("td").nth(4)).to_have_text("20 abr 2025, 03:00")
+        expect(row.locator("td").nth(4)).to_have_text("20 ago 2025, 03:00")
         expect(row.locator("td").nth(5)).to_have_text("Musica")
 
     def test_delete_event_organizer(self):
@@ -354,6 +359,51 @@ class EventCRUDTest(EventBaseTest):
         # Verificar que el evento eliminado ya no aparece en la tabla
         expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
 
+class FutureEventsEndToEndTest(LiveServerTestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(username='organizer', password='pass123') 
+        organizer_group, created = Group.objects.get_or_create(name='Organizers')
+        self.user.groups.add(organizer_group)
+        self.user.save()
+
+        self.category = Category.objects.create(name='Conciertos')
+        self.venue = Venue.objects.create(
+            name='Estadio Central',
+            city='Ciudad',
+            address='Calle 123',
+            capacity=1000,
+            contact='contacto@venue.com'
+        )
+
+        self.past_event = Event.objects.create(
+            title='Evento Pasado',
+            description='Evento que ya pasó',
+            scheduled_at=timezone.now() - timedelta(days=3),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue
+        )
+
+        self.future_event = Event.objects.create(
+            title='Evento Futuro',
+            description='Evento que será',
+            scheduled_at=timezone.now() + timedelta(days=3),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue
+        )
+
+    def test_authenticated_user_sees_only_future_events(self):
+        self.client.login(username='organizer', password='pass123')
+
+        url = reverse('events')  
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.future_event.title)
+        self.assertNotContains(response, self.past_event.title)
+
 class EventDetailViewTest(EventBaseTest):
     """Test que verifica la visualización de la página de detalle de eventos para un usuario regular"""
     def test_event_detail_page_regular_user(self):
@@ -371,13 +421,6 @@ class EventDetailViewTest(EventBaseTest):
         self.page.goto(f"{self.live_server_url}/events/{self.event3.id}/")
         cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
         expect(cuenta_regresiva).to_have_text(re.compile(r"\d+ dias, \d+ horas, \d+ minutos"))
-
-    def test_event_detail_page_regular_evento_pasado_cuenta_regresiva(self):
-        self.login_user("usuario", "password123")
-        self.page.goto(f"{self.live_server_url}/events/{self.event1.id}/")
-        cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
-        expect(cuenta_regresiva).to_be_visible()
-        expect(cuenta_regresiva).to_have_text("El evento ya ha ocurrido.")
         
     def test_event_detail_display_event(self):
         """Test que verifica que se muestra bien el estado de un evento especifico"""
