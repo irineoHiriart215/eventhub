@@ -1,12 +1,13 @@
-import datetime
 import re
-
+from datetime import datetime, timedelta
 from django.utils import timezone
 from playwright.sync_api import expect
+from django.test import TestCase, Client
 
-from app.models import Event, User, Category, Venue
+from app.models import User, Ticket, Event, Category, Venue
 
 from app.test.test_e2e.base import BaseE2ETest
+from django.urls import reverse 
 
 
 class EventBaseTest(BaseE2ETest):
@@ -35,7 +36,7 @@ class EventBaseTest(BaseE2ETest):
         self.category = Category.objects.create(name='Musica', description='Descripcion ejemplo')
         self.venue = Venue.objects.create(name='Estadio Único', city='La Plata', address='Av. 32', capacity=1000, contact='example')
         # Evento 1
-        event_date1 = timezone.make_aware(datetime.datetime(2025, 2, 10, 10, 10))
+        event_date1 = timezone.make_aware(datetime(2025, 2, 10, 10, 10))
         self.event1 = Event.objects.create(
             title="Evento de prueba 1",
             description="Descripción del evento 1",
@@ -46,7 +47,7 @@ class EventBaseTest(BaseE2ETest):
         )
 
         # Evento 2
-        event_date2 = timezone.make_aware(datetime.datetime(2025, 3, 15, 14, 30))
+        event_date2 = timezone.make_aware(datetime(2025, 3, 15, 14, 30))
         self.event2 = Event.objects.create(
             title="Evento de prueba 2",
             description="Descripción del evento 2",
@@ -340,7 +341,7 @@ class EventDetailViewTest(EventBaseTest):
     """Test que verifica la visualización de la página de detalle de eventos para un usuario regular"""
     def test_event_detail_page_regular_user(self):
 
-        event_date3 = timezone.make_aware(datetime.datetime(2025, 7, 15, 13, 10))
+        event_date3 = timezone.make_aware(datetime(2025, 7, 15, 13, 10))
         self.event3 = Event.objects.create(
             title="Evento de prueba 3",
             description="Evento Futuro",
@@ -360,3 +361,56 @@ class EventDetailViewTest(EventBaseTest):
         cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
         expect(cuenta_regresiva).to_be_visible()
         expect(cuenta_regresiva).to_have_text("El evento ya ha ocurrido.")
+
+#test e2e para evitar compras cuando no hay cupo disponible  
+class TicketEndToEndCapacityTest(TestCase):
+    def setUp(self):
+        # Cliente de prueba
+        self.client = Client()
+        
+         # Usuario organizador (NO se loguea con este)
+        self.organizer = User.objects.create_user(username="organizer", password="pass123")
+
+        # Crear usuario y loguearlo
+        self.user = User.objects.create_user(username="testuser", password="password123")
+        self.client.login(username="testuser", password="password123")
+
+        # Crear categoría y venue
+        self.category = Category.objects.create(name="Concierto")
+        self.venue = Venue.objects.create(
+            name="Teatro Principal",
+            city="Centro",
+            address="Calle Falsa 123",
+            capacity=100,
+            contact="1234-5678"
+            )
+
+        # Crear evento con capacidad limitada
+        self.event = Event.objects.create(
+            title="Evento lleno",
+            description="No hay mas cupo disponible",
+            scheduled_at=datetime.now() + timedelta(days=1),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue,
+            general_capacity=2,
+            vip_capacity=0,
+        )
+
+        # Crear tickets para agotar el cupo GENERAL
+        Ticket.objects.create(event=self.event, user=self.user, type="GENERAL", quantity=2)
+
+    def test_no_se_puede_comprar_si_no_hay_cupo(self):
+        url = reverse("ticket_form", args=[self.event.id])
+
+        response = self.client.post(url, {
+            "quantity": 1,
+            "type": "GENERAL",
+            "event_id": self.event.id
+        }, follow=True)
+
+        # Asegurarse de que no redirige (porque debe mostrar error)
+        self.assertEqual(response.status_code, 200)
+
+        # El mensaje esperado debería estar en la respuesta
+        self.assertContains(response, "No hay mas cupo disponible", html=True)
