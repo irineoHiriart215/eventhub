@@ -36,16 +36,6 @@
                                     value="{{ ticket.quantity }}"
                                     name="quantity" />
                             </div>
-                            
-                            {% if messages %}
-                            <div class="alert-messages mb-3">
-                                {% for message in messages %}
-                                    <div class="alert alert-{{ message.tags }}">
-                                        {{ message }}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
 
                             <div>
                                 <label for="type" class="form-label">Tipo de entradas</label>

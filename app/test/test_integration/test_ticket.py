@@ -55,7 +55,7 @@ class TicketIntegrationTest(TestCase):
         })
 
         self.assertEqual(response.status_code, 200)  # No redirige, vuelve al form
-        self.assertContains(response, "No podés comprar más de 5 entradas para este evento")
+        self.assertContains(response, "No podés comprar más de 4 entradas para este evento")
         
         # Verificar que no se hayan creado tickets extra
         total_tickets = Ticket.objects.filter(user=self.user, event=self.event).aggregate(total=models.Sum('quantity'))['total']

@@ -227,22 +227,30 @@ def ticket_form(request, event_id=None, id=None):
         event = get_object_or_404(Event, pk=event_id)
 
     if request.method == "POST":
-        quantity = request.POST.get("quantity")
+        quantity = int(request.POST.get("quantity"))
         type_ = request.POST.get("type")
         event_id_post = request.POST.get("event_id")
 
         if ticket:
+            # Validar límite al modificar
+            existing_tickets = Ticket.objects.filter(user=request.user, event=ticket.event).exclude(pk=ticket.pk)
+            total_quantity = sum(t.quantity for t in existing_tickets)
+
+            if total_quantity + quantity > 4:
+                messages.error(request, f"No podés comprar más de 4 entradas para este evento. Ya tenés {total_quantity}.")
+                return render(request, "app/ticket_form.html", { "ticket": ticket, "event": ticket.event })
+
             ticket.quantity = quantity
             ticket.type = type_
+            ticket.save()
         else:
             event = get_object_or_404(Event, pk=event_id_post)
 
-            quantity = int(quantity)
             existing_tickets = Ticket.objects.filter(user=request.user, event=event)
             total_quantity = sum(t.quantity for t in existing_tickets)
 
             if total_quantity + quantity > 4:
-                messages.error(request, f"No podés comprar más de 5 entradas para este evento. Ya tenés {total_quantity}.")
+                messages.error(request, f"No podés comprar más de 4 entradas para este evento. Ya tenés {total_quantity}.")
                 return render(request, "app/ticket_form.html", { "ticket": ticket, "event": event })
 
             ticket = Ticket.objects.create(
@@ -251,9 +259,7 @@ def ticket_form(request, event_id=None, id=None):
                 user=request.user,
                 event=event
             )
-        ticket.save()
         return redirect("ticket_list")
-    
     return render(request, "app/ticket_form.html", { "ticket": ticket, "event" : event})
 
 # View para ver el detalle de un ticket
