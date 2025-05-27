@@ -1,53 +1,80 @@
-import unittest
-from django.contrib.auth import get_user_model
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.urls import reverse
+from app.models import User, Event, Venue, Category, Ticket
+from django.utils import timezone
+from datetime import timedelta
 from playwright.sync_api import sync_playwright
+import time
+from django.test.utils import override_settings
 
+@override_settings(DJANGO_ALLOW_ASYNC_UNSAFE=True)
+class TicketEditLimitE2ETest(StaticLiveServerTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.playwright = sync_playwright().start()
+        cls.browser = cls.playwright.chromium.launch(headless=True)
+        cls.page = cls.browser.new_page()
 
-class TicketPurchaseTest(unittest.TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        cls.page.close()
+        cls.browser.close()
+        cls.playwright.stop()
+        super().tearDownClass()
+
     def setUp(self):
-        User = get_user_model()
-        User.objects.filter(username="testuser").delete()
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
+        self.user = User.objects.create_user(username="edituser", password="pass")
+        self.organizer = User.objects.create_user(username="organizer", password="pass")
+        self.venue = Venue.objects.create(
+            name="Teatro", city="Ciudad", address="Calle Falsa 123",
+            capacity=100, contact="teatro@ejemplo.com"
+        )
+        self.category = Category.objects.create(
+            name="Música", description="Musicales", is_active=True
+        )
+        self.event = Event.objects.create(
+            title="Edit Ticket Event", description="test evento",
+            scheduled_at=timezone.now() + timedelta(days=10),
+            organizer=self.organizer, category=self.category,
+            venue=self.venue, general_capacity=10, vip_capacity=5,
+            state="AVAILABLE"
+        )
+        self.ticket1 = Ticket.objects.create(
+            quantity=2, type="GENERAL", user=self.user, event=self.event
+        )
+        self.ticket2 = Ticket.objects.create(
+            quantity=1, type="GENERAL", user=self.user, event=self.event
+        )
 
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=False)
-        self.page = self.browser.new_page()
-
-    def tearDown(self):
-        self.browser.close()
-        self.playwright.stop()
-        self.user.delete()
-
-    def test_user_can_create_ticket_with_quantity_4(self):
+    def login_and_edit_ticket(self, new_quantity):
         # Login
-        self.page.goto("http://127.0.0.1:8000/accounts/login/")
-        self.page.fill('input[name="username"]', 'testuser')
-        self.page.fill('input[name="password"]', 'testpass123')
+        self.page.goto(f"{self.live_server_url}/accounts/login/")
+        self.page.fill('input[name="username"]', "edituser")
+        self.page.fill('input[name="password"]', "pass")
         self.page.click('button[type="submit"]')
+        self.page.wait_for_url(f"{self.live_server_url}/")  
 
-        self.page.wait_for_url("http://127.0.0.1:8000/events/")
+        # Ir al formulario de edición del ticket
+        edit_url = f"{self.live_server_url}{reverse('ticket_edit', kwargs={'id': self.ticket1.id})}"
+        self.page.goto(edit_url)
 
-        # Ir al form de compra
-        self.page.goto("http://127.0.0.1:8000/ticket/create/1")
+        # Cambiar la cantidad
+        self.page.fill('input[name="quantity"]', str(new_quantity))
+        self.page.select_option('select[name="type"]', 'GENERAL')
+        self.page.click('button[type="submit"]')
+        time.sleep(1)
 
-        self.page.select_option("#type", "GENERAL")
-        self.page.fill("#card_number", "1234567812345678")
-        self.page.fill("#expiry_date", "12/25")
-        self.page.fill("#cvv", "123")
-        self.page.fill("#card_name", "Juan Pérez")
-        self.page.check("#terms")
-        self.page.fill("#quantity", "4")
+    def test_edit_within_limit_then_exceed_limit(self):
+        # --- Paso 1: editar a 3 (total = 3 + 1 = 4 → OK)
+        self.login_and_edit_ticket(new_quantity=3)
+        self.ticket1.refresh_from_db()
+        self.assertEqual(self.ticket1.quantity, 3)
 
-        # Enviar formulario
-        with self.page.expect_navigation():
-            self.page.click("button[type=submit]")
+        # --- Paso 2: intentar editar a 4 (total = 4 + 1 = 5 → ERROR)
+        self.login_and_edit_ticket(new_quantity=4)
+        self.ticket1.refresh_from_db()
+        self.assertEqual(self.ticket1.quantity, 3)  # No cambió
 
-        print("Redirigido a:", self.page.url)
-
-        # Verificar que no aparece mensaje de error
-        page_content = self.page.content()
-        self.assertNotIn("No podés comprar más de", page_content)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        # Verificamos que el error se muestra
+        self.assertIn("No podés comprar más de 4 entradas", self.page.content())
