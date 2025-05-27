@@ -36,6 +36,9 @@ class EventBaseTest(BaseE2ETest):
         )
 
         # Crear eventos de prueba
+        self.category = Category.objects.create(name='Musica', description='Descripcion ejemplo')
+        self.venue = Venue.objects.create(name='Estadio Único', city='La Plata', address='Av. 32', capacity=1000, contact='example')
+
         # Evento 1
         event_date1 = timezone.make_aware(datetime(2025, 2, 10, 10, 10))
         self.event1 = Event.objects.create(
@@ -43,6 +46,8 @@ class EventBaseTest(BaseE2ETest):
             description="Descripción del evento 1",
             scheduled_at=event_date1,
             organizer=self.organizer,
+            category=self.category,
+            venue=self.venue,
         )
 
         # Evento 2
@@ -52,6 +57,8 @@ class EventBaseTest(BaseE2ETest):
             description="Descripción del evento 2",
             scheduled_at=event_date2,
             organizer=self.organizer,
+            category=self.category,
+            venue=self.venue,
         )
 
     def _table_has_event_info(self):
@@ -281,7 +288,7 @@ class EventCRUDTest(EventBaseTest):
         time.fill("03:00")
 
         # Enviar el formulario
-        self.page.get_by_role("button", name="Crear Evento").click()
+        self.page.get_by_role("button", name="Editar Evento").click()
 
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
