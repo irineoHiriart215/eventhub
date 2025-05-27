@@ -117,6 +117,14 @@ class Venue(models.Model):
         
 
 class Event(models.Model):
+    EVENT_STATE = (
+    ("AVAILABLE", "Activo"),
+    ("CANCELLED", "Cancelado"),
+    ("REPROGRAM", "Reprogramado"),
+    ("SOLD_OUT", "Agotado"),
+    ("FINISHED", "Finalizado"),
+    )
+    
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
@@ -125,6 +133,7 @@ class Event(models.Model):
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
     general_capacity = models.PositiveIntegerField(default=5)
     vip_capacity = models.PositiveIntegerField(default=3)
+    state = models.CharField(max_length=20, choices=EVENT_STATE, default="AVAILABLE")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -142,9 +151,18 @@ class Event(models.Model):
     def total_capacity(self):
         return self.general_capacity + self.vip_capacity
     
+    
+    def can_be_bought(self):
+        if ((self.state == "CANCELLED") or (self.state == "SOLD_OUT") or (self.state == "FINISHED")):
+            return False 
+        else:
+            return True
+        
+    def no_changes_after_cancelled(self):
+        return self.state == "CANCELLED"
 
     @classmethod
-    def validate(cls, title, description, scheduled_at):
+    def validate(cls, title, description, scheduled_at, state):
         errors = {}
 
         if title == "":
@@ -153,11 +171,15 @@ class Event(models.Model):
         if description == "":
             errors["description"] = "Por favor ingrese una descripcion"
 
+        valid_states = [s[0] for s in cls.EVENT_STATE]
+        if state is not None and state not in valid_states:
+            errors["state"] = "Estado inválido"
+        
         return errors
 
     @classmethod
-    def new(cls, title, description, scheduled_at, organizer, category, venue):
-        errors = Event.validate(title, description, scheduled_at)
+    def new(cls, title, description, scheduled_at, organizer, category, venue, state):
+        errors = Event.validate(title, description, scheduled_at, state)
 
         if len(errors.keys()) > 0:
             return False, errors
@@ -168,18 +190,20 @@ class Event(models.Model):
             scheduled_at=scheduled_at,
             organizer=organizer,
             category=category,
-            venue=venue
+            venue=venue,
+            state=state
         )
 
         return True, None
     
-    def update(self, title, description, scheduled_at, organizer, category, venue):
+    def update(self, title, description, scheduled_at, organizer, category, venue, state):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
         self.category = category or self.category
         self.venue = venue or self.venue
+        self.state = state or self.state
         self.save()
 
     def get_cuenta_regresiva(self):

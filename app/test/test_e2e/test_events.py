@@ -48,7 +48,8 @@ class EventBaseTest(BaseE2ETest):
             scheduled_at=event_date1,
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state="AVAILABLE" 
         )
 
         # Evento 2
@@ -59,7 +60,8 @@ class EventBaseTest(BaseE2ETest):
             scheduled_at=event_date2,
             organizer=self.organizer,
             category=self.category,
-            venue=self.venue
+            venue=self.venue,
+            state="REPROGRAM"
         )
 
     def _table_has_event_info(self):
@@ -68,10 +70,11 @@ class EventBaseTest(BaseE2ETest):
         headers = self.page.locator("table thead th")
         expect(headers.nth(0)).to_have_text("Título")
         expect(headers.nth(1)).to_have_text("Descripción")
-        expect(headers.nth(2)).to_have_text("Recinto")
-        expect(headers.nth(3)).to_have_text("Fecha")
-        expect(headers.nth(4)).to_have_text("Categoria")
-        expect(headers.nth(5)).to_have_text("Acciones")
+        expect(headers.nth(2)).to_have_text("Estado")
+        expect(headers.nth(3)).to_have_text("Recinto")
+        expect(headers.nth(4)).to_have_text("Fecha")
+        expect(headers.nth(5)).to_have_text("Categoria")
+        expect(headers.nth(6)).to_have_text("Acciones")
 
         # Verificar que los eventos aparecen en la tabla
         rows = self.page.locator("table tbody tr")
@@ -81,16 +84,18 @@ class EventBaseTest(BaseE2ETest):
         row0 = rows.nth(0)
         expect(row0.locator("td").nth(0)).to_have_text("Evento de prueba 1")
         expect(row0.locator("td").nth(1)).to_have_text("Descripción del evento 1")
-        expect(row0.locator("td").nth(2)).to_have_text("Estadio Único")
-        expect(row0.locator("td").nth(3)).to_have_text("10 oct 2025, 10:10")
-        expect(row0.locator("td").nth(4)).to_have_text("Musica")
+        expect(row0.locator("td").nth(2)).to_have_text("Activo")
+        expect(row0.locator("td").nth(3)).to_have_text("Estadio Único")
+        expect(row0.locator("td").nth(4)).to_have_text("10 oct 2025, 10:10")
+        expect(row0.locator("td").nth(5)).to_have_text("Musica")
 
         # Verificar datos del segundo evento
         expect(rows.nth(1).locator("td").nth(0)).to_have_text("Evento de prueba 2")
         expect(rows.nth(1).locator("td").nth(1)).to_have_text("Descripción del evento 2")
-        expect(rows.nth(1).locator("td").nth(2)).to_have_text("Estadio Único")
-        expect(rows.nth(1).locator("td").nth(3)).to_have_text("15 nov 2025, 14:30")
-        expect(rows.nth(1).locator("td").nth(4)).to_have_text("Musica")
+        expect(rows.nth(1).locator("td").nth(2)).to_have_text("Reprogramado")
+        expect(rows.nth(1).locator("td").nth(3)).to_have_text("Estadio Único")
+        expect(rows.nth(1).locator("td").nth(4)).to_have_text("15 nov 2025, 14:30")
+        expect(rows.nth(1).locator("td").nth(5)).to_have_text("Musica")
 
     def _table_has_correct_actions(self, user_type):
         """Método auxiliar para verificar que las acciones son correctas según el tipo de usuario"""
@@ -99,6 +104,7 @@ class EventBaseTest(BaseE2ETest):
         detail_button = row0.get_by_role("link", name="Ver Detalle")
         edit_button = row0.get_by_role("link", name="Editar")
         delete_form = row0.locator("form")
+        buy_tickets_button = row0.get_by_role("link", name="Comprar entradas")
 
         expect(detail_button).to_be_visible()
         expect(detail_button).to_have_attribute("href", f"/events/{self.event1.id}/")
@@ -112,9 +118,13 @@ class EventBaseTest(BaseE2ETest):
 
             delete_button = delete_form.get_by_role("button", name="Eliminar")
             expect(delete_button).to_be_visible()
+            
+            expect(buy_tickets_button).to_have_count(0)
         else:
             expect(edit_button).to_have_count(0)
             expect(delete_form).to_have_count(0)
+            expect(buy_tickets_button).to_be_visible()
+            expect(buy_tickets_button).to_have_attribute("href", f"/ticket/create/{self.event1.id}")
 
 
 class EventAuthenticationTest(EventBaseTest):
@@ -245,6 +255,7 @@ class EventCRUDTest(EventBaseTest):
         self.page.get_by_label("Hora").fill("16:45")
         self.page.select_option("select[name='venue']", label="Estadio Único")
         self.page.get_by_label("Musica").check()
+        self.page.select_option("select[name='state']", label="Activo")
 
         # Enviar el formulario
         self.page.get_by_role("button", name="Crear Evento").click()
@@ -259,9 +270,10 @@ class EventCRUDTest(EventBaseTest):
         row = self.page.locator("table tbody tr").last
         expect(row.locator("td").nth(0)).to_have_text("Evento de prueba E2E")
         expect(row.locator("td").nth(1)).to_have_text("Descripción creada desde prueba E2E")
-        expect(row.locator("td").nth(2)).to_have_text("Estadio Único")
-        expect(row.locator("td").nth(3)).to_have_text("15 ago 2026, 16:45")
-        expect(row.locator("td").nth(4)).to_have_text("Musica")
+        expect(row.locator("td").nth(2)).to_have_text("Activo")
+        expect(row.locator("td").nth(3)).to_have_text("Estadio Único")
+        expect(row.locator("td").nth(4)).to_have_text("15 ago 2026, 16:45")
+        expect(row.locator("td").nth(5)).to_have_text("Musica")
 
 
     def test_edit_event_organizer(self):
@@ -303,6 +315,10 @@ class EventCRUDTest(EventBaseTest):
         time.fill("03:00")
 
         expect(self.page.get_by_label("Musica")).to_be_checked()
+        
+        selected_option = self.page.locator("select[name='state'] option:checked")
+        expect(selected_option).to_have_text("Activo")
+        self.page.select_option("select[name='state']", label="Reprogramado")
 
         # Enviar el formulario
         self.page.get_by_role("button", name="Editar Evento").click()
@@ -314,9 +330,10 @@ class EventCRUDTest(EventBaseTest):
         row = self.page.locator("table tbody tr").first
         expect(row.locator("td").nth(0)).to_have_text("Titulo editado")
         expect(row.locator("td").nth(1)).to_have_text("Descripcion Editada")
-        expect(row.locator("td").nth(2)).to_have_text("Estadio Único")
-        expect(row.locator("td").nth(3)).to_have_text("20 ago 2025, 03:00")
-        expect(row.locator("td").nth(4)).to_have_text("Musica")
+        expect(row.locator("td").nth(2)).to_have_text("Reprogramado")
+        expect(row.locator("td").nth(3)).to_have_text("Estadio Único")
+        expect(row.locator("td").nth(4)).to_have_text("20 ago 2025, 03:00")
+        expect(row.locator("td").nth(5)).to_have_text("Musica")
 
     def test_delete_event_organizer(self):
         """Test que verifica la funcionalidad de eliminar un evento para organizadores"""
@@ -400,11 +417,18 @@ class EventDetailViewTest(EventBaseTest):
             category=self.category,
             venue=self.venue
         )
-
         self.login_user("usuario", "password123")
         self.page.goto(f"{self.live_server_url}/events/{self.event3.id}/")
         cuenta_regresiva = self.page.get_by_test_id("cuenta_regresiva")
         expect(cuenta_regresiva).to_have_text(re.compile(r"\d+ dias, \d+ horas, \d+ minutos"))
+        
+    def test_event_detail_display_event(self):
+        """Test que verifica que se muestra bien el estado de un evento especifico"""
+        self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/{self.event1.id}/")
+        state = self.page.get_by_test_id("state")
+        expect(state).to_be_visible()
+        expect(state).to_have_text("Activo")
 
 #test e2e para evitar compras cuando no hay cupo disponible  
 class TicketEndToEndCapacityTest(TestCase):
