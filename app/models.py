@@ -131,12 +131,26 @@ class Event(models.Model):
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="events")
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
+    general_capacity = models.PositiveIntegerField(default=5)
+    vip_capacity = models.PositiveIntegerField(default=3)
     state = models.CharField(max_length=20, choices=EVENT_STATE, default="AVAILABLE")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     def __str__(self):
         return self.title
+    
+    
+    def tickets_sold(self):
+        return self.ticket_set.aggregate(total=models.Sum('quantity'))['total'] or 0
+
+    def is_full(self):
+        return self.tickets_sold() >= self.total_capacity
+    
+    @property
+    def total_capacity(self):
+        return self.general_capacity + self.vip_capacity
+    
     
     def can_be_bought(self):
         if ((self.state == "CANCELLED") or (self.state == "SOLD_OUT") or (self.state == "FINISHED")):

@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
 
 from .models import Event, User, Ticket
 from .models import Comment, Category, Rating, Venue
@@ -215,6 +216,7 @@ def edit_comment(request, comment_id):
 @login_required
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
+    event = comment.event 
 
     if comment.user != request.user and event.organizer != request.user:
         messages.error(request, "No tenés permiso para eliminar este comentario.")
@@ -229,7 +231,7 @@ def delete_comment(request, comment_id):
     return render(
         request,
         "app/delete_comment.html",
-        {"comment": comment, "event": comment.event},
+        {"comment": comment, "event": event},
     )
     
 @login_required
@@ -248,11 +250,12 @@ def ticket_list(request):
 def ticket_form(request, event_id=None, id=None):
     ticket = None
     event = None
+    
     if id:
         ticket = get_object_or_404(Ticket, pk=id, user=request.user)
         if not ticket.can_be_modified_by_user(request.user):
             return redirect("home")
-        event= ticket.event
+        event = ticket.event
     elif event_id:
         event = get_object_or_404(Event, pk=event_id)
 
@@ -269,7 +272,53 @@ def ticket_form(request, event_id=None, id=None):
         quantity_input = request.POST.get("quantity")
         type_input = request.POST.get("type")
         event_id_post = request.POST.get("event_id")
+        
+        if not event and event_id_post:
+            event = get_object_or_404(Event, pk=event_id_post)
+            
+        try:
+            quantity = int(quantity_input)
+        except (TypeError, ValueError):
+            messages.error(request, "La cantidad ingresada no es válida.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
 
+        if quantity <= 0:
+            messages.error(request, "La cantidad debe ser mayor a cero.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+        
+        # Calcular cupo disponible según el tipo de entrada
+        if type_input == "VIP":
+            capacity = event.vip_capacity
+        elif type_input == "GENERAL":
+            capacity = event.general_capacity
+        else:
+            messages.error(request, "Tipo de entrada no válido.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        # Obtener tickets vendidos sin contar el que se está editando (si aplica)
+        total_tickets_sold = Ticket.objects.filter(event=event, type=type_input)
+        if ticket:
+            total_tickets_sold = total_tickets_sold.exclude(pk=ticket.pk)
+
+        total_sold = total_tickets_sold.aggregate(total=Sum('quantity'))['total'] or 0
+        available = capacity - total_sold
+
+        total_sold_all_types = Ticket.objects.filter(event=event).exclude(pk=ticket.pk if ticket else None).aggregate(total=Sum('quantity'))['total'] or 0
+        total_available = event.total_capacity - total_sold_all_types       
+        if available < 0:
+            available = 0
+
+        print(f"Tipo: {type_input}, Capacidad tipo: {capacity}, Vendidos tipo: {total_sold}, Disponible tipo: {available}, Pedido: {quantity}")
+        print(f"Capacidad total: {event.total_capacity}, Vendidos total: {total_sold_all_types}, Disponible total: {total_available}")
+
+    
+        if available == 0:
+            messages.error(request, "No hay mas cupo disponible")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        if quantity > available:
+            messages.error(request, f"No hay suficiente cupo disponible para este tipo de entrada. Solo quedan {available} entradas.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
         # Validaciones server-side
         errors = []
         

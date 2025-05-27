@@ -3,9 +3,8 @@ import datetime
 from unittest.mock import patch
 from django.test import TestCase
 from django.utils import timezone
-import datetime
-from app.models import Event, User, Category, Venue, Venue, Category
-
+from django.contrib.auth.models import User
+from app.models import Event, Ticket, Category, Venue, User
 
 class EventModelTest(TestCase):
     def setUp(self):
@@ -171,14 +170,34 @@ class EventModelTest(TestCase):
         self.assertEqual(updated_event.title, original_title)
         self.assertEqual(updated_event.description, new_description)
         self.assertEqual(updated_event.scheduled_at, original_scheduled_at)
+        
 
-    def test_get_cuenta_regresiva_future_events(self):
+#Determinamos si hay cupo disponible en un evento.   
+class EventUnitTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.category = Category.objects.create(name="Test Category")
+        self.venue = Venue.objects.create(name="Test Venue", address="Test Address", capacity=100)
+
+    def test_event_has_no_capacity_left(self):
         event = Event.objects.create(
-            title="Evento de prueba",
-            description="Descripción del evento de prueba",
-            scheduled_at=timezone.now() + datetime.timedelta(days=2, hours= 3, minutes=15),
-            organizer=self.organizer,
+            title="Test Event",
+            description="desc",
+            scheduled_at=timezone.now(),
+            organizer=self.user,
             category=self.category,
+            venue=self.venue,
+            general_capacity=10,
+            vip_capacity=0,
+        )
+
+        # Crear 10 tickets (ocupando todo el cupo general)
+        for _ in range(10):
+            Ticket.objects.create(event=event, user=self.user, quantity=1, type='general')
+
+        total_tickets = sum(ticket.quantity for ticket in event.tickets.all())
+        self.assertEqual(total_tickets, event.general_capacity)
+
             venue=self.venue,
             state = "AVAILABLE"
         )
