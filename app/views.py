@@ -11,6 +11,7 @@ from .models import Event, User, Ticket
 from .models import Comment, Category, Rating, Venue
 
 
+
 def register(request):
     if request.method == "POST":
         email = request.POST.get("email")
@@ -251,7 +252,7 @@ def ticket_list(request):
 def ticket_form(request, event_id=None, id=None):
     ticket = None
     event = None
-    
+
     if id:
         ticket = get_object_or_404(Ticket, pk=id, user=request.user)
         if not ticket.can_be_modified_by_user(request.user):
@@ -261,9 +262,8 @@ def ticket_form(request, event_id=None, id=None):
         event = get_object_or_404(Event, pk=event_id)
 
     if not event.can_be_bought():
-        messages.error(request, f"No se puede realizar la compra porque el evento esta {event.get_state_display()}.")
+        messages.error(request, f"No se puede realizar la compra porque el evento está {event.get_state_display()}.")
         return redirect("events")
-
 
     if event.organizer == request.user:
         messages.error(request, "El organizador no tiene permiso para comprar tickets de su propio evento.")
@@ -276,7 +276,7 @@ def ticket_form(request, event_id=None, id=None):
         
         if not event and event_id_post:
             event = get_object_or_404(Event, pk=event_id_post)
-            
+
         try:
             quantity = int(quantity_input)
         except (TypeError, ValueError):
@@ -286,8 +286,8 @@ def ticket_form(request, event_id=None, id=None):
         if quantity <= 0:
             messages.error(request, "La cantidad debe ser mayor a cero.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
-        
-        # Calcular cupo disponible según el tipo de entrada
+
+        # Validar el tipo de entrada
         if type_input == "VIP":
             capacity = event.vip_capacity
         elif type_input == "GENERAL":
@@ -296,7 +296,7 @@ def ticket_form(request, event_id=None, id=None):
             messages.error(request, "Tipo de entrada no válido.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
 
-        # Obtener tickets vendidos sin contar el que se está editando (si aplica)
+        # Tickets ya vendidos por tipo (excluyendo el ticket actual si se está editando)
         total_tickets_sold = Ticket.objects.filter(event=event, type=type_input)
         if ticket:
             total_tickets_sold = total_tickets_sold.exclude(pk=ticket.pk)
@@ -304,56 +304,48 @@ def ticket_form(request, event_id=None, id=None):
         total_sold = total_tickets_sold.aggregate(total=Sum('quantity'))['total'] or 0
         available = capacity - total_sold
 
-        total_sold_all_types = Ticket.objects.filter(event=event).exclude(pk=ticket.pk if ticket else None).aggregate(total=Sum('quantity'))['total'] or 0
-        total_available = event.total_capacity - total_sold_all_types       
         if available < 0:
             available = 0
 
-        print(f"Tipo: {type_input}, Capacidad tipo: {capacity}, Vendidos tipo: {total_sold}, Disponible tipo: {available}, Pedido: {quantity}")
-        print(f"Capacidad total: {event.total_capacity}, Vendidos total: {total_sold_all_types}, Disponible total: {total_available}")
-
-    
         if available == 0:
-            messages.error(request, "No hay mas cupo disponible")
+            messages.error(request, "No hay más cupo disponible.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
 
         if quantity > available:
             messages.error(request, f"No hay suficiente cupo disponible para este tipo de entrada. Solo quedan {available} entradas.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
-        # Validaciones server-side
-        errors = []
-        
-        valid_types = [choice[0] for choice in Ticket.TICKET_TYPES]
-        if type_input not in valid_types:
-            errors.append("El tipo de entrada no es valido.")
-        
-        try:
-            quantity_value = int(quantity_input)
-            if quantity_value < 0:
-                errors.append("La cantidad de tickets comprados debe ser mayo a 0.")
-        except (ValueError, TypeError):
-            errors.append("El tipo de dato ingresado en cantidad es incorrecto. Debe ser un entero")
-        
-        if errors:
-            for error in errors:
-                messages.error(request, error)
+
+        # ✅ Validación de máximo 4 entradas por usuario
+        if ticket:
+            existing_tickets = Ticket.objects.filter(user=request.user, event=event).exclude(pk=ticket.pk)
         else:
-            if ticket:
-                ticket.quantity = quantity_input
-                ticket.type = type_input
-                messages.success(request, "Se modifico la compra con exito.")
-                ticket.save()
-            else:
-                event = get_object_or_404(Event, pk=event_id_post)
-                ticket = Ticket.objects.create(
-                    quantity = quantity_input,
-                    type=type_input,
-                    user=request.user,
-                    event=event
-                )
-                messages.success(request, "Se realizo la compra con exito.")
-            return redirect("ticket_list")
-    return render(request, "app/ticket_form.html", { "ticket": ticket, "event" : event})
+            existing_tickets = Ticket.objects.filter(user=request.user, event=event)
+
+        total_quantity_user = sum(t.quantity for t in existing_tickets)
+
+        if total_quantity_user + quantity > 4:
+            messages.error(request, f"No podés comprar más de 4 entradas para este evento. Ya tenés {total_quantity_user}.")
+            return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+        # Crear o actualizar ticket
+        if ticket:
+            ticket.quantity = quantity
+            ticket.type = type_input
+            ticket.save()
+            messages.success(request, "Se modificó la compra con éxito.")
+        else:
+            ticket = Ticket.objects.create(
+                quantity=quantity,
+                type=type_input,
+                user=request.user,
+                event=event
+            )
+            messages.success(request, "Se realizó la compra con éxito.")
+
+        return redirect("ticket_list")
+
+    return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
 
 # View para ver el detalle de un ticket
 @login_required

@@ -131,8 +131,8 @@ class Event(models.Model):
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="events")
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
-    general_capacity = models.PositiveIntegerField(default=5)
-    vip_capacity = models.PositiveIntegerField(default=3)
+    general_capacity = models.PositiveIntegerField(default=100)
+    vip_capacity = models.PositiveIntegerField(default=50)
     state = models.CharField(max_length=20, choices=EVENT_STATE, default="AVAILABLE")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -278,7 +278,12 @@ class Ticket(models.Model):
         """Permite eliminar si es el dueño del ticket"""
         return self.user == user
     
+    @classmethod
+    def can_purchase(cls, user, event):
+        tickets_bought = cls.objects.filter(user=user, event=event).aggregate(total=models.Sum('quantity'))['total'] or 0
+        return tickets_bought < 4
+    
     def __str__(self):
         """Cuando se imprima un objeto en especifico se vera de la siguiente forma: VIP x2 - juanito - A1B2C3D4E5F6"""
         return f"{self.type} x{self.quantity} - {self.user.username} - {self.ticket_code}"
-        
+    

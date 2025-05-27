@@ -12,7 +12,7 @@
                         <p>{{ event.description }}</p>
                         <p><i class="fa fa-calendar"></i> {{ event.date }}</p>
                     </div>
-        
+
                     <form 
                     action="
                     {% if ticket %}
@@ -36,6 +36,7 @@
                                     value="{{ ticket.quantity }}"
                                     name="quantity" />
                             </div>
+
                             <div>
                                 <label for="type" class="form-label">Tipo de entradas</label>
                                 <select name="type" id="type" required>
@@ -44,6 +45,7 @@
                                     <option value="VIP" {% if ticket.type == "VIP" %} selected {% endif %} >Entrada VIP</option>
                                 </select>
                             </div>
+
                             <hr />
 
                             <h5 class="mt-4">Método de pago</h5>
