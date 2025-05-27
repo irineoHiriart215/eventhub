@@ -117,7 +117,20 @@ class EventsListViewTest(BaseEventTestCase):
         messages = list(get_messages(response.wsgi_request))
         self.assertTrue(any("no se puede realizar la compra" in m.message.lower() for m in messages))
         
+    def test_cannot_edit_cancelled_event(self):
+        """Test que verifica que se evita al organizador editar un evento que ya fue cancelado"""
+        self.client.login(username="organizador", password="password123")
+
+        response = self.client.get(reverse("events"))
+        self.assertEqual(response.status_code, 200)
         
+        response = self.client.get(reverse("event_edit", args=[self.event2.id]), follow=True)
+        
+        self.assertRedirects(response, reverse("events"))
+        
+        # Verifica que se muestra un mensaje de error
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any("no se puede modificar" in m.message.lower() for m in messages))    
 
 class EventDetailViewTest(BaseEventTestCase):
     """Tests para la vista de detalle de un evento"""

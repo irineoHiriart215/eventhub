@@ -143,6 +143,9 @@ class Event(models.Model):
             return False 
         else:
             return True
+        
+    def no_changes_after_cancelled(self):
+        return self.state == "CANCELLED"
 
     @classmethod
     def validate(cls, title, description, scheduled_at, state):

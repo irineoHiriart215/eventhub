@@ -116,6 +116,12 @@ def event_form(request, id = None):
     categorias = Category.objects.all()
     venues = Venue.objects.all()
 
+    if id is not None:
+        event = get_object_or_404(Event, pk=id)
+        if event.no_changes_after_cancelled():
+            messages.error(request, "No se puede modificar un evento cancelado.")
+            return redirect("events")
+
     if request.method == "POST":
         title = request.POST.get("title")
         description = request.POST.get("description")
@@ -139,7 +145,6 @@ def event_form(request, id = None):
         if id is None:
             Event.new(title, description, scheduled_at, request.user, category, venue, state)
         else:
-            event = get_object_or_404(Event, pk=id)
             event.update(title, description, scheduled_at, request.user, category, venue, state)
 
         return redirect("events")
