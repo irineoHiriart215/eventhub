@@ -7,9 +7,7 @@ from django.utils import timezone
 from django.contrib.messages import get_messages
 
 from datetime import timedelta
-
-from app.models import Category, Event, Ticket, User, Venue
-
+from app.models import Event, User, Category, Venue, Ticket
 
 class BaseEventTestCase(TestCase):
     """Clase base con la configuración común para todos los tests de eventos"""
@@ -407,7 +405,6 @@ class EventDeleteViewTest(BaseEventTestCase):
         # Verificar que el evento sigue existiendo
         self.assertTrue(Event.objects.filter(pk=self.event1.id).exists())
         
-        
 #simula la creación de un ticket a través de la view y verificar que no se permite cuando el evento está lleno       
 class TicketIntegrationTest(TestCase):
     def setUp(self):
@@ -445,3 +442,53 @@ class TicketIntegrationTest(TestCase):
         'type': 'GENERAL'
         })
         self.assertContains(response, "No hay más cupo disponible.", status_code=200)
+
+
+class FutureEventsViewTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='organizer', password='pass123')
+        self.user.is_organizer = True
+        self.user.save()
+
+        self.category = Category.objects.create(name='Conciertos')
+        self.venue = Venue.objects.create(
+            name='Estadio Central',
+            city='Ciudad',
+            address='Calle 123',
+            capacity=1000,
+            contact='contacto@venue.com'
+        )
+
+        # Evento pasado
+        self.past_event = Event.objects.create(
+            title='Evento Pasado',
+            description='Evento que ya pasó',
+            scheduled_at=timezone.now() - timedelta(days=5),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue
+        )
+
+        # Evento futuro
+        self.future_event = Event.objects.create(
+            title='Evento Futuro',
+            description='Evento que será',
+            scheduled_at=timezone.now() + timedelta(days=5),
+            organizer=self.user,
+            category=self.category,
+            venue=self.venue
+        )
+
+    def test_only_future_events_are_listed(self):
+        self.client.login(username='organizer', password='pass123')
+
+        url = reverse('events')  # Cambia 'events-list' por el nombre correcto de tu url
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        # Comprobar que el evento futuro está en la respuesta
+        self.assertContains(response, self.future_event.title)
+
+        # Comprobar que el evento pasado NO está en la respuesta
+        self.assertNotContains(response, self.past_event.title)

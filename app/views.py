@@ -65,7 +65,8 @@ def home(request):
 
 @login_required
 def events(request):
-    events = Event.objects.all().order_by("scheduled_at")
+    now = timezone.now()
+    events = Event.objects.filter(scheduled_at__gt=now).order_by("scheduled_at")
     return render(
         request,
         "app/events.html",
