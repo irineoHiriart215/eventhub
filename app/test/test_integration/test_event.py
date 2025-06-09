@@ -170,11 +170,11 @@ class EventDetailViewTest(BaseEventTestCase):
     
     def test_event_detail_view_cuenta_regresiva_regular_user_evento_futuro(self):
         self.client.login(username="regular", password="password123")
-        response = self.client.get(reverse("event_detail", args=[self.event1.id]))
+        response = self.client.get(reverse("event_detail", args=[self.event2.id]))
         self.assertEqual(response.status_code, 200)
         cuenta_regresiva = response.context["cuenta_regresiva"]
         self.assertIsNotNone(cuenta_regresiva)
-        self.assertRegex(cuenta_regresiva, r'\d+ dias, \d+ horas, \d+ minutos')
+        self.assertRegex(cuenta_regresiva, r'1 dias, 23 horas, 59 minutos')
 
     def test_event_detail_view_cuenta_regresiva_no_organizador(self):
         self.client.login(username="organizador", password="password123")
