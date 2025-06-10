@@ -308,7 +308,7 @@ def ticket_form(request, event_id=None, id=None):
             available = 0
 
         if available == 0:
-            messages.error(request, "No hay más cupo disponible.")
+            messages.error(request, "No hay mas cupo disponible.")
             return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
 
         if quantity > available:
@@ -345,6 +345,13 @@ def ticket_form(request, event_id=None, id=None):
         return redirect("ticket_list")
 
     return render(request, "app/ticket_form.html", {"ticket": ticket, "event": event})
+
+def update_state_based_on_capacity(self):
+    if self.is_full():
+        self.state = "SOLD_OUT"
+    else:
+        self.state = "AVAILABLE"
+    self.save()
 
 
 # View para ver el detalle de un ticket
