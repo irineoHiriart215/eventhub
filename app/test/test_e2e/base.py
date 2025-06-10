@@ -1,4 +1,5 @@
 import os
+import time
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from playwright.sync_api import sync_playwright
@@ -44,7 +45,7 @@ class BaseE2ETest(StaticLiveServerTestCase):
         )
 
     def login_user(self, username, password):
-        """Método auxiliar para iniciar sesión"""
+        """"Método auxiliar para iniciar sesión"""
         self.page.goto(f"{self.live_server_url}/accounts/login/")
         self.page.get_by_label("Usuario").fill(username)
         self.page.get_by_label("Contraseña").fill(password)

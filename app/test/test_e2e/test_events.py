@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from django.utils import timezone
-from playwright.sync_api import expect
+from playwright.sync_api import expect, sync_playwright
 from django.test import TestCase, Client
 
 from app.models import User, Ticket, Event, Category, Venue
@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.test import LiveServerTestCase
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 
 
@@ -430,13 +431,12 @@ class EventDetailViewTest(EventBaseTest):
         expect(state).to_be_visible()
         expect(state).to_have_text("Activo")
 
-#test e2e para evitar compras cuando no hay cupo disponible  
-class TicketEndToEndCapacityTest(TestCase):
+class TicketEndToEndCapacityTest(StaticLiveServerTestCase):
     def setUp(self):
-        # Cliente de prueba
+
         self.client = Client()
-        
-         # Usuario organizador (NO se loguea con este)
+
+        # Usuario organizador (NO se loguea con este)
         self.organizer = User.objects.create_user(username="organizer", password="pass123")
 
         # Crear usuario y loguearlo
@@ -451,34 +451,55 @@ class TicketEndToEndCapacityTest(TestCase):
             address="Calle Falsa 123",
             capacity=100,
             contact="1234-5678"
-            )
+        )
 
-        # Crear evento con capacidad limitada
+        # Crear evento con capacidad agotada
         self.event = Event.objects.create(
             title="Evento lleno",
             description="No hay mas cupo disponible",
-            scheduled_at=datetime.now() + timedelta(days=1),
+            scheduled_at=timezone.now() + timedelta(days=1),
             organizer=self.user,
             category=self.category,
             venue=self.venue,
             general_capacity=2,
             vip_capacity=0,
+            state="SOLD_OUT"
         )
 
         # Crear tickets para agotar el cupo GENERAL
         Ticket.objects.create(event=self.event, user=self.user, type="GENERAL", quantity=2)
 
     def test_no_se_puede_comprar_si_no_hay_cupo(self):
-        url = reverse("ticket_form", args=[self.event.id])
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context()
+            page = context.new_page()
 
-        response = self.client.post(url, {
-            "quantity": 1,
-            "type": "GENERAL",
-            "event_id": self.event.id
-        }, follow=True)
+            # Iniciar sesión
+            page.goto(self.live_server_url + "/accounts/login/")
+            page.fill('input[name="username"]', 'testuser')
+            page.fill('input[name="password"]', 'password123')
+            page.click('button[type="submit"]')
 
-        # Asegurarse de que no redirige (porque debe mostrar error)
-        self.assertEqual(response.status_code, 200)
+            # Esperar a que cargue la página de eventos después del login
+            page.wait_for_url("**/events/")
 
-        # El mensaje esperado debería estar en la respuesta
-        self.assertContains(response, "No hay mas cupo disponible", html=True)
+            # Intentar acceder a la página de compra del ticket
+            page.goto(self.live_server_url + f"/ticket/create/{self.event.id}")
+            page.wait_for_url("**/events/")
+
+            # Verificar que no aparece el formulario de compra
+            try:
+                page.wait_for_selector('select[name="type"]', timeout=5000)
+                assert False, "El formulario se mostró para un evento sin cupo"
+            except Exception:
+                pass  # Esperado que no aparezca el formulario
+
+             # Verificar mensaje de error correcto
+            page.wait_for_selector("div.alert-danger:has-text('No se puede realizar la compra porque el evento está Agotado.')", timeout=5000)
+           
+            # Confirmar que no redirigió al listado de tickets
+            assert "/tickets/" not in page.url
+
+            browser.close()
+        
