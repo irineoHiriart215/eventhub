@@ -37,3 +37,9 @@ Aplicación web para venta de entradas utilizada en la cursada 2025 de Ingenier�
 `Leiva, Emanuel. Legajo 31483`
 `Battistella, Tomás. Legajo 31520`
 `Sarria, Ivan. Legajo 31144`
+
+## Configuracion de variables de entorno.
+-Copiar el archivo env-example a un archivo llamado .env
+-Editar el archivo .env reemplazando valores de ejemplo, con valores reales
+-Ejecutar el contenedor Docker pasando el archivo .env usando la opcion --env-file
+    'docker run -d -p 8000:8000 -name myapp --env-file .env nombreimagen'
