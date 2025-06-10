@@ -9,9 +9,13 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 from django.contrib.messages import constants as messages
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Map Django message levels to Bootstrap alert classes
 MESSAGE_TAGS = {
@@ -30,12 +34,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure--f67ll=2-b2qolla9=1f8mtg@s=l8^y8aj=@ij-0f4)eg@%8(0"
-
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure--f67ll=2-b2qolla9=1f8mtg@s=l8^y8aj=@ij-0f4)eg@%8(0")
+        
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG =  os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
 
 # Application definition
@@ -144,3 +148,10 @@ LOGIN_REDIRECT_URL = "/events/"
 LOGIN_URL = "/accounts/login/"
 
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+print("--- Variables de Entorno ---")
+print("SECRET_KEY:", os.environ.get("SECRET_KEY"))
+print("DEBUG:", os.environ.get("DEBUG"))
+print("ALLOWED_HOSTS:", os.environ.get("ALLOWED_HOSTS"))
+print("TIME_ZONE:", os.environ.get("TIME_ZONE"))
+print("--- Fin Variables de Entorno ---")

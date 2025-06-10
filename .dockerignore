@@ -1,0 +1,37 @@
+#Archivos y directorios de git
+.git
+.gitignore
+
+#Archivos de python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.DS_Store
+
+#Variables de entorno
+.env
+
+#Directorios de virtualenv
+venv/
+env/
+*/venv/
+*/env/
+
+#Archivos de log
+*.log
+*.db
+
+#Archivos temporales
+tmp/
+temp/
+*/tmp/
+*/temp/
+
+#archivos del IDE
+.vscode/
+
+requirements.txt~
+
+#node_modules
+node_modules/
