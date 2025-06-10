@@ -457,7 +457,7 @@ class TicketEndToEndCapacityTest(StaticLiveServerTestCase):
         self.event = Event.objects.create(
             title="Evento lleno",
             description="No hay mas cupo disponible",
-            scheduled_at=datetime.now() + timedelta(days=1),
+            scheduled_at=timezone.now() + timedelta(days=1),
             organizer=self.user,
             category=self.category,
             venue=self.venue,
