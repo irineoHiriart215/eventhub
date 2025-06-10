@@ -1,90 +1,63 @@
-from django.test import TestCase, Client
-from django.urls import reverse
-from app.models import User, Event, Venue, Category, Ticket
+import re
+from datetime import datetime, timedelta
 from django.utils import timezone
-from datetime import timedelta
+from playwright.sync_api import expect
+from django.urls import reverse
 
-class TicketEditLimitTest(TestCase):
+from app.models import User, Venue, Category, Event
+from app.test.test_e2e.base import BaseE2ETest
+
+class TicketValidation(BaseE2ETest):
 
     def setUp(self):
-        self.client = Client()
-        # Creamos un usuario que va a comprar tickets
-        self.user = User.objects.create_user(username="edituser", password="pass")
-        self.client.login(username="edituser", password="pass")
+        super().setUp()
 
-        # Otro usuario que será el organizador del evento
-        self.organizer = User.objects.create_user(username="organizer", password="pass")
-
-        # Creamos el lugar del evento
-        self.venue = Venue.objects.create(
-            name="Teatro",
-            city="Ciudad Ejemplo",
-            address="Calle Falsa 123",
-            capacity=100,
-            contact="contacto@teatro.com"
+        # Crear usuario organizador
+        self.organizer = User.objects.create_user(
+            username="organizador",
+            email="organizador@example.com",
+            password="password123",
+            is_organizer=True,
         )
 
-        # Categoría del evento
-        self.category = Category.objects.create(
-            name="Música",
-            description="Eventos musicales",
-            is_active=True
+        # Crear usuario regular
+        self.regular_user = User.objects.create_user(
+            username="usuario",
+            email="usuario@example.com",
+            password="password123",
+            is_organizer=False,
         )
 
-        # Creamos el evento con estado "AVAILABLE" para poder comprar entradas
-        self.event = Event.objects.create(
-            title="Edit Ticket Event",
-            description="Test evento edición ticket",
-            scheduled_at=timezone.now() + timedelta(days=10),
+        # Crear eventos de prueba
+        self.category = Category.objects.create(name='Musica', description='Descripcion ejemplo')
+        self.venue = Venue.objects.create(name='Estadio Único', city='La Plata', address='Av. 32', capacity=1000, contact='example')
+        # Evento 1
+        event_date1 = timezone.make_aware(datetime(2025, 10, 10, 10, 10))
+        self.event1 = Event.objects.create(
+            title="Evento de prueba 1",
+            description="Descripción del evento 1",
+            scheduled_at=event_date1,
             organizer=self.organizer,
             category=self.category,
             venue=self.venue,
-            general_capacity=10,
-            vip_capacity=5,
-            state="AVAILABLE"
+            state="AVAILABLE" 
         )
+    
+    def test_ticket_validation(self):
+        self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/")
+        
+        self.page.goto(f"{self.live_server_url}/ticket/create/1")
+        self.page.get_by_label("Cantidad de entradas").fill("5")
+        self.page.select_option("select[name='type']", label="Entrada General")
+        self.page.get_by_label("Número de tarjeta").fill("1111 1111 1111 1111")
+        self.page.get_by_label("Fecha de expiración").fill("11/11")
+        self.page.get_by_label("CVV").fill("111")
+        self.page.get_by_label("Nombre en la tarjeta").fill("Emanuel Leiva")
+        self.page.get_by_label("Acepto los términos y condiciones").check()
+        self.page.get_by_role("button", name="Confirmar compra").click()
 
-    def test_edit_ticket_quantity_exceed_limit(self):
-        # Creamos dos tickets distintos para este usuario en el mismo evento
-        ticket1 = Ticket.objects.create(
-            quantity=2,
-            type="GENERAL",
-            user=self.user,
-            event=self.event
-        )
-        Ticket.objects.create(
-            quantity=1,
-            type="GENERAL",
-            user=self.user,
-            event=self.event
-        )
-
-        # Editamos el primer ticket para aumentar la cantidad
-        url_edit = reverse("ticket_edit", kwargs={"id": ticket1.id})
-
-        # Probamos con una cantidad que sumada a los otros tickets sea 4 (OK)
-        response = self.client.post(url_edit, {
-            "quantity": 3,  # 3 + 1 = 4 tickets, límite permitido
-            "type": "GENERAL",
-            "event_id": self.event.id,
-        })
-
-        # Debería redirigir porque está dentro del límite
-        self.assertEqual(response.status_code, 302)
-        ticket1.refresh_from_db()
-        self.assertEqual(ticket1.quantity, 3)  # Para ver si se actualizó bien
-
-        # Editamos para que la cantidad sea 4 (3+1 otro ticket = 5, supera límite)
-        response = self.client.post(url_edit, {
-            "quantity": 4,
-            "type": "GENERAL",
-            "event_id": self.event.id,
-        })
-
-        # Ahora esperamos que NO redirija y muestre el formulario con error
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No podés comprar más de 4 entradas para este evento")
-
-        # Verificamos que la cantidad del ticket no haya cambiado (sigue 3)
-        ticket1.refresh_from_db()
-        self.assertEqual(ticket1.quantity, 3)
+        # Verifica el mensaje de error
+        expect(self.page.get_by_text(
+            re.compile(r"No podés comprar más de 4 entradas para este evento.*")
+        )).to_be_visible()
