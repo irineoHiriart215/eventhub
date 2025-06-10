@@ -45,9 +45,15 @@ class TicketValidation(BaseE2ETest):
     
     def test_ticket_validation(self):
         self.login_user("usuario", "password123")
-        self.page.goto(f"{self.live_server_url}/events/")
+
+        # Ir al formulario de compra correctamente
+        ticket_url = reverse("ticket_form", args=[self.event1.id])
+        self.page.goto(f"{self.live_server_url}{ticket_url}")
         
-        self.page.goto(f"{self.live_server_url}/ticket/create/1")
+        # Esperar el input
+        expect(self.page.locator("#quantity")).to_be_visible(timeout=10000)
+
+        # Llenar y enviar
         self.page.get_by_label("Cantidad de entradas").fill("5")
         self.page.select_option("select[name='type']", label="Entrada General")
         self.page.get_by_label("Número de tarjeta").fill("1111 1111 1111 1111")
@@ -55,9 +61,10 @@ class TicketValidation(BaseE2ETest):
         self.page.get_by_label("CVV").fill("111")
         self.page.get_by_label("Nombre en la tarjeta").fill("Emanuel Leiva")
         self.page.get_by_label("Acepto los términos y condiciones").check()
+
         self.page.get_by_role("button", name="Confirmar compra").click()
 
-        # Verifica el mensaje de error
+        # Verificar mensaje de error
         expect(self.page.get_by_text(
             re.compile(r"No podés comprar más de 4 entradas para este evento.*")
         )).to_be_visible()
