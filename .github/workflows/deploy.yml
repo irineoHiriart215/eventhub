@@ -2,7 +2,7 @@ name: Entrega Continua - Deploy
 
 on:
   workflow_run:
-    workflows: ["Integración Continua"]  # nombre exacto del workflow CI
+    workflows: ["Integración Continua - Eventhub"]  # nombre exacto del workflow CI
     types:
       - completed
 
