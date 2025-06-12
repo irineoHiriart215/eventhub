@@ -40,6 +40,11 @@ DEBUG =  os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = ['https://eventhub-main.onrender.com']
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    
 
 # Application definition
 
@@ -147,5 +152,3 @@ LOGIN_REDIRECT_URL = "/events/"
 LOGIN_URL = "/accounts/login/"
 
 LOGOUT_REDIRECT_URL = "/accounts/login/"
-
-CSRF_TRUSTED_ORIGINS = ['https://eventhub-main.onrender.com']
