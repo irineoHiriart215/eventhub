@@ -36,7 +36,7 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/eventhub:${{ github.ref_name }}
         run: |
-          curl -X POST https://api.render.com/deploy/srv-${RENDER_SERVICE_ID} \
+          curl -X POST https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
